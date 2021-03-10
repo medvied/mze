@@ -168,6 +168,10 @@ Requirements
       - It MUST be possible to have templates that new records may be based on.
         Template record provides a way to automatically parse records based on
         this template.
+    * - R.future-proof
+      - The solution MUST be future-proof. It MUST be possible to use it in 50
+        years, regardless of life time of the software the solution is based
+        on.
 
 
 Design
