@@ -238,3 +238,28 @@ MVP
 - rst file format
 - rst2html5 renderer
 - vim to modify
+
+
+Existing implementations
+------------------------
+
+Articles
+........
+
+- https://en.wikipedia.org/wiki/Personal_knowledge_base
+- https://en.wikipedia.org/wiki/Personal_knowledge_management
+- https://zettelkasten.de/posts/overview/
+- https://notes.andymatuschak.org/About_these_notes
+- https://notes.andymatuschak.org/z3SjnvsB5aR2ddsycyXofbYR7fCxo7RmKW2be
+- `Trilium Notes is a hierarchical note taking application with focus on building large personal knowledge bases <https://github.com/zadam/trilium>`_
+- `Как я веду Zettelkasten в Notion уже год: стартовый набор и полезные трюки <https://habr.com/ru/post/509756/>`_
+- https://dangirsh.org/posts/zettelkasten.html
+
+Comparison
+..........
+
+.. list-table::
+
+    * - name
+      - features
+      - what is missing
