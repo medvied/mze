@@ -271,8 +271,8 @@ Alternatives
     * - name
       - features
       - what is missing
-    * - `Zim is a graphical text editor used to maintain a collection of wiki
-        pages <https://zim-wiki.org/>`_ `source
+    * - `Zim <https://zim-wiki.org/>`_ is a graphical text editor used to
+        maintain a collection of wiki pages  `source
         <https://github.com/zim-desktop-wiki/zim-desktop-wiki>`_ `wiki
         <https://en.wikipedia.org/wiki/Zim_(software)>`_
       -
