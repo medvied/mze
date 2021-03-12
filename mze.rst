@@ -188,22 +188,22 @@ Design
 Technologies
 ------------
 
-Docker to run everything in containers
-Python as the primary language
-Web browser as UI
-http(s) as mze-re <-> browser transport
-MZE protocol to retrive records
-FUSE to access remote records as files when needed (use case: large records
-like movies)
-files on a filesystem for everything
-S3 for blobs (?)
-Records UUID to records location mapping
-Record UUID to tags mapping
-Record UUID to attribute mapping
-Record UUID, tags, attributes, URIs - metadata
-Git for metadata versioning. Rewrite git history as needed.
-nginx as web server/proxy
-neovim as the editor
+- Docker to run everything in containers
+- Python as the primary language
+- Web browser as UI
+- http(s) as mze-re <-> browser transport
+- MZE protocol to retrive records
+- FUSE to access remote records as files when needed (use case: large records
+- like movies)
+- files on a filesystem for everything
+- S3 for blobs (?)
+- Records UUID to records location mapping
+- Record UUID to tags mapping
+- Record UUID to attribute mapping
+- Record UUID, tags, attributes, URIs - metadata
+- Git for metadata versioning. Rewrite git history as needed.
+- nginx as web server/proxy
+- neovim as the editor
 
 Directory structure:
 - first 2 digits of UUID
@@ -232,9 +232,9 @@ previous version are moved to the version dir. Version history is derived from
 MVP
 ---
 
-nginx as a web server
-git for metadata
-filesystem for records
-rst file format
-rst2html5 renderer
-vim to modify
+- nginx as a web server
+- git for metadata
+- filesystem for records
+- rst file format
+- rst2html5 renderer
+- vim to modify
