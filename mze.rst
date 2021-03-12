@@ -272,8 +272,8 @@ Alternatives
       - features
       - what is missing
     * - `Org Mode <https://orgmode.org/>`_ (`source
-         <https://code.orgmode.org/bzg/org-mode>`_ `wiki
-         <https://en.wikipedia.org/wiki/Org-mode>`_)
+        <https://code.orgmode.org/bzg/org-mode>`_ `wiki
+        <https://en.wikipedia.org/wiki/Org-mode>`_)
       -
       -
     * - `Zim <https://zim-wiki.org/>`_ is a graphical text editor used to
