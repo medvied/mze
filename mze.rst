@@ -172,6 +172,11 @@ Requirements
       - The solution MUST be future-proof. It MUST be possible to use it in 50
         years, regardless of life time of the software the solution is based
         on.
+    * - R.record.feed
+      - It MUST be possible to have pointers to RSS/Atom, internal
+        (R.update-feed) or external. It MUST be possible to aggregate several
+        such records into a single record. It MUST be possible to specify
+        update interval etc.
 
 
 Design
