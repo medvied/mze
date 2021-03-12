@@ -271,9 +271,14 @@ Alternatives
     * - name
       - features
       - what is missing
+    * - `Org Mode <https://orgmode.org/>`_ (`source
+         <https://code.orgmode.org/bzg/org-mode>`_ `wiki
+         <https://en.wikipedia.org/wiki/Org-mode>`_)
+      -
+      -
     * - `Zim <https://zim-wiki.org/>`_ is a graphical text editor used to
-        maintain a collection of wiki pages  `source
+        maintain a collection of wiki pages  (`source
         <https://github.com/zim-desktop-wiki/zim-desktop-wiki>`_ `wiki
-        <https://en.wikipedia.org/wiki/Zim_(software)>`_
+        <https://en.wikipedia.org/wiki/Zim_(software)>`_)
       -
       -
