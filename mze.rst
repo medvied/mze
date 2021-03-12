@@ -254,12 +254,26 @@ Articles
 - `Trilium Notes is a hierarchical note taking application with focus on building large personal knowledge bases <https://github.com/zadam/trilium>`_
 - `Как я веду Zettelkasten в Notion уже год: стартовый набор и полезные трюки <https://habr.com/ru/post/509756/>`_
 - https://dangirsh.org/posts/zettelkasten.html
+- https://en.wikipedia.org/wiki/User_modeling
+- https://en.wikipedia.org/wiki/Personal_wiki
+- https://en.wikipedia.org/wiki/Information_mapping
+- https://en.wikipedia.org/wiki/Mind_map
+- https://orgmode.org/
+- https://en.wikipedia.org/wiki/Comparison_of_note-taking_software
+- https://en.wikipedia.org/wiki/Comparison_of_document-markup_languages
+- https://en.wikipedia.org/wiki/List_of_personal_information_managers
 
-Comparison
-..........
+Alternatives
+............
 
 .. list-table::
 
     * - name
       - features
       - what is missing
+    * - `Zim is a graphical text editor used to maintain a collection of wiki
+        pages <https://zim-wiki.org/>`_ `source
+        <https://github.com/zim-desktop-wiki/zim-desktop-wiki>`_ `wiki
+        <https://en.wikipedia.org/wiki/Zim_(software)>`_
+      -
+      -
