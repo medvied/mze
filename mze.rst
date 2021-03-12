@@ -267,9 +267,22 @@ Articles
 - https://en.wikipedia.org/wiki/Comparison_of_note-taking_software
 - https://en.wikipedia.org/wiki/Comparison_of_document-markup_languages
 - https://en.wikipedia.org/wiki/List_of_personal_information_managers
+- https://en.wikipedia.org/wiki/Outliner
+- https://en.wikipedia.org/wiki/Comparison_of_note-taking_software
 
 Alternatives
 ............
+
+- https://ru.wikipedia.org/wiki/MyTetra
+- https://en.wikipedia.org/wiki/TagSpaces
+- https://en.wikipedia.org/wiki/Taskwarrior
+- https://en.wikipedia.org/wiki/TiddlyWiki
+- https://en.wikipedia.org/wiki/Leo_(text_editor)
+- https://en.wikipedia.org/wiki/Tomboy_(software)
+- https://en.wikipedia.org/wiki/QOwnNotes
+- https://en.wikipedia.org/wiki/MyNotex
+- https://en.wikipedia.org/wiki/BasKet_Note_Pads
+- https://en.wikipedia.org/wiki/Gnote
 
 .. list-table::
 
