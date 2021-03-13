@@ -254,6 +254,7 @@ previous version are moved to the version dir. Version history is derived from
   - https://gojs.net/latest/samples/sequenceDiagram.html
   - https://visjs.org/
   - https://d3js.org/
+  - https://mermaid-js.github.io/mermaid/#/
 
 
 MVP
