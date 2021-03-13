@@ -43,6 +43,17 @@ Link
   An 1:1 relation between records.
 
 
+Features
+--------
+
+- search: full-text, OCRed images, regexp, search over multiple MZEs (federated
+  search)
+- version history: like git commit message for every change
+- migration: partial, by record type, select what to migrate, copy or move
+- API: everything within MZE is available for scripts
+- plugins: extend functionality
+
+
 Requirements
 ------------
 
@@ -177,6 +188,10 @@ Requirements
         (R.update-feed) or external. It MUST be possible to aggregate several
         such records into a single record. It MUST be possible to specify
         update interval etc.
+    * - R.export.git
+      - Export to a git repo with version history and changes like they were
+        done to a single record (i.e. without having all versions present in
+        the last commit)
 
 
 Design
@@ -189,6 +204,7 @@ Design
 - mze-sm - MZE system manager
 - mze-pr - MZE proxy
 - mze-se - MZE search engine
+
 
 Technologies
 ------------
@@ -269,6 +285,7 @@ Articles
 - https://en.wikipedia.org/wiki/List_of_personal_information_managers
 - https://en.wikipedia.org/wiki/Outliner
 - https://en.wikipedia.org/wiki/Comparison_of_note-taking_software
+
 
 Alternatives
 ............
