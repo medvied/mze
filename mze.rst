@@ -249,6 +249,12 @@ previous version are moved to the version dir. Version history is derived from
   - request: URI GET/PUT
   - reply: data or redirect to another mze-ss
 
+- diagram software
+
+  - https://gojs.net/latest/samples/sequenceDiagram.html
+  - https://visjs.org/
+  - https://d3js.org/
+
 
 MVP
 ---
