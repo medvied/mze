@@ -231,6 +231,18 @@ Directory structure:
 - second 2 digits of UUID
 - full UUID
 
+Alternative:
+- 0
+- 1
+- ...
+- 999
+- 1000/1000
+- 1000/1001
+- ...
+- 1000/1999
+- 2000/2000
+- ...
+
 File structure for an record
 - ``tags``: json list of tags
 - ``attributes``: json map of attributes
