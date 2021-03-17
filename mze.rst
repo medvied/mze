@@ -192,6 +192,10 @@ Requirements
       - Export to a git repo with version history and changes like they were
         done to a single record (i.e. without having all versions present in
         the last commit)
+    * - R.archive
+      - It MUST be possible to archive external references (web pages, images,
+        maybe sites etc.), so they would be available even if the URI is no
+        longer valid.
 
 
 Design
