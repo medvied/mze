@@ -84,6 +84,9 @@ Requirements
       - All removals should be deferred with configurable timeout.
     * - R.fuzzy-search
       - Fuzzy search feature should implemented. Example: github -> go to file.
+    * - R.fuzzy-search.interpretations
+      - Fuzzy search MUST show how the search query is in interpreted. Example:
+        search query "date:01/02", interpretation: "February 1".
     * - R.record.mime-type
       - Each record has to have it's MIME type.
     * - R.record.uri
