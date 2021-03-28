@@ -199,6 +199,9 @@ Requirements
       - It MUST be possible to archive external references (web pages, images,
         maybe sites etc.), so they would be available even if the URI is no
         longer valid.
+    * - R.dead-link-detector
+      - It MUST be a way to detect and show all internal and external dead
+        links.
 
 
 Design
