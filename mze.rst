@@ -202,6 +202,9 @@ Requirements
     * - R.dead-link-detector
       - It MUST be a way to detect and show all internal and external dead
         links.
+    * - R.intregration.git
+      - It MUST be possible to set up an update to a record whenever a git repo
+        is updated.
 
 
 Design
