@@ -349,3 +349,8 @@ Alternatives
         <https://en.wikipedia.org/wiki/Zim_(software)>`_)
       -
       -
+
+References
+..........
+
+- https://typesense.org/about/
