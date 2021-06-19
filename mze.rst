@@ -205,6 +205,12 @@ Requirements
     * - R.intregration.git
       - It MUST be possible to set up an update to a record whenever a git repo
         is updated.
+    * - R.record.kabnan
+      - Kanban board kind of recort MUST be supported
+    * - R.record.gantt
+      - Gantt chart lind of record MUST be supported
+    * - R.record.timeline
+      - Timeline kind of record MUST be supported
 
 
 Design
