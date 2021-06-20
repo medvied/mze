@@ -216,13 +216,17 @@ Requirements
 Design
 ------
 
-- mze-rs - MZE record server
-- mze-re - MZE renderer
-- mze-ss - MZE storage server
-- mze-ca - MZE cache
-- mze-sm - MZE system manager
-- mze-pr - MZE proxy
-- mze-se - MZE search engine
+================  =====  ======================================================
+component         short  description
+================  =====  ======================================================
+C.storage-server  C.ss   storage server: blob & alike storage
+C.record-server   C.rs   record server: kv & complex data structures
+C.renderer        C.re   renderer: transform record to something to view etc.
+C.manager         C.ma   manager: HA, startup/shutdown, recover etc.
+C.cache           C.ca   cache: volatile storage for records with fast access
+C.pxoxy           C.pr   proxy: frontend for user
+C.search-engine   C.se   search engine: a way to find records
+================  =====  ======================================================
 
 
 Technologies
