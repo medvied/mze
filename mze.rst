@@ -59,6 +59,8 @@ Requirements
 
 .. list-table::
 
+    * - R.glue
+      - Glue existing projects together to achieve the functionality.
     * - R.uuid
       - Each record and each link have their own UUID.
     * - R.git
