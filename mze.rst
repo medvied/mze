@@ -231,6 +231,24 @@ C.client          C.cl   client: browser, neovim, CLI
 C.executor        C.ex   executor: automatic actions
 ================  =====  ======================================================
 
+================  =============  ==============================================
+kind              component      description
+================  =============  ==============================================
+C.storage-server  C.ss.git       git
+                  C.ss.s3        AWS S3
+C.record-server
+C.view-server
+C.renderer
+C.manager
+C.cache
+C.pxoxy           C.proxy.nginx  Nginx
+C.search-engine
+C.client          C.cl.browser   web browser
+                  C.cl.nvim      Neovim
+                  C.cl.fuse      FUSE
+                  C.cl.caldav    CalDAV
+================  =============  ==============================================
+
 
 Technologies
 ============
