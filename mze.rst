@@ -19,7 +19,7 @@ Max's Zettelkasten
 ==================
 
 Overview
---------
+========
 
 There are different ways to store information. There are multiple ways to store
 links to information. This software allows to link pieces of information in the
@@ -32,7 +32,7 @@ Goals:
   possible. Software MUST NOT be a bottleneck during search.
 
 Glossary
---------
+========
 
 .. glossary::
 
@@ -44,7 +44,7 @@ Link
 
 
 Features
---------
+========
 
 - search: full-text, OCRed images, regexp, search over multiple MZEs (federated
   search)
@@ -55,7 +55,7 @@ Features
 
 
 Requirements
-------------
+============
 
 .. list-table::
 
@@ -214,7 +214,7 @@ Requirements
 
 
 Design
-------
+======
 
 ================  =====  ======================================================
 component         short  description
@@ -232,7 +232,7 @@ C.client          C.cl   client: browser, neovim, CLI
 
 
 Technologies
-------------
+============
 
 - Docker to run everything in containers
 - Python as the primary language
@@ -295,7 +295,7 @@ previous version are moved to the version dir. Version history is derived from
 
 
 MVP
----
+===
 
 - nginx as a web server
 - git for metadata
@@ -306,10 +306,10 @@ MVP
 
 
 Existing implementations
-------------------------
+========================
 
 Articles
-........
+--------
 
 - https://en.wikipedia.org/wiki/Personal_knowledge_base
 - https://en.wikipedia.org/wiki/Personal_knowledge_management
@@ -332,7 +332,7 @@ Articles
 
 
 Alternatives
-............
+------------
 
 - https://ru.wikipedia.org/wiki/MyTetra
 - https://en.wikipedia.org/wiki/TagSpaces
@@ -363,6 +363,6 @@ Alternatives
       -
 
 References
-..........
+----------
 
 - https://typesense.org/about/
