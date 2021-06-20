@@ -223,6 +223,7 @@ C.storage-server  C.ss   storage server: blob & alike storage
 C.record-server   C.rs   record server: kv & complex data structures
 C.view-server     C.vs   view server: transform data to a different form
 C.renderer        C.re   renderer: put the record together
+C.modifier        C.mo   modifier: a way to add/modify/remove/etc. a record
 C.manager         C.ma   manager: HA, startup/shutdown, recovery, update etc.
 C.cache           C.ca   cache: volatile storage for records with fast access
 C.pxoxy           C.pr   proxy: frontend for user
