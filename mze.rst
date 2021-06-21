@@ -238,18 +238,19 @@ C.executor        C.ex   executor: automatic actions
 kind              component      description
 ================  =============  ==============================================
 C.storage-server  C.ss.git       git
-                  C.ss.s3        AWS S3
+.                 C.ss.s3        AWS S3
 C.record-server
 C.view-server
-C.renderer
+C.renderer        C.re.rst2html5
+.                 C.re.pandoc
 C.manager
 C.cache
-C.pxoxy           C.proxy.nginx  Nginx
+C.pxoxy           C.pr.nginx     Nginx
 C.search-engine
 C.client          C.cl.browser   web browser
-                  C.cl.nvim      Neovim
-                  C.cl.fuse      FUSE
-                  C.cl.caldav    CalDAV
+.                 C.cl.nvim      Neovim
+.                 C.cl.fuse      FUSE
+.                 C.cl.caldav    CalDAV
 ================  =============  ==============================================
 
 
