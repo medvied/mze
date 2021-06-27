@@ -355,6 +355,23 @@ Interaction diagram
 - ``C.ca.mem`` -> (``C.vs.pdf-page``, ``C.ss.dir``, ``C.rs.git-ssh``)
 - ``C.vs.pdf-page`` -> ``C.ss.dir``
 
+Implementation plan
+...................
+
+- ``C.pr.nginx``: reverse proxy for ``C.pr.all-records``, ``C.re.search`` and
+  for debugging: ``C.ss.dir``, ``C.vs.pdf-page``, ``C.ca.mem``,
+  ``C.se.pdf-page``.
+- ``C.ss.dir``: web server, serve files from a dir + special filename for file
+  list
+- ``C.rs.git-ssh``: openssh + mounted git repo
+- ``C.vs.pdf-page``: web server, input: (pdf filename, page #), output: image
+- ``C.ca.mem``: input: web request, output: result from cache or querieng this
+  data from ``C.ss.dir``, ``C.vs.pdf-page``
+- ``C.se.pdf-page``: input: string, output: list[pdf file, page #]
+- ``C.re.search``: input: search string, output: web page with search string +
+  results
+- ``C.pr.all-records``: web server, input: record UUID, output: record
+
 
 Later
 -----
