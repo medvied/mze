@@ -254,6 +254,12 @@ C.client          C.cl.browser      web browser
 ================  ================  ===========================================
 
 
+When updating python/nginx/etc. versions
+----------------------------------------
+
+- copy new ``nginx.conf`` file from the image;
+
+
 Technologies
 ============
 
