@@ -320,6 +320,35 @@ previous version are moved to the version dir. Version history is derived from
 MVP
 ===
 
+First
+-----
+
+================  ===================  ========================================
+role              name                 description
+================  ===================  ========================================
+C.storage-server  C.ss.dir             - a directory is served directly over
+                                         HTTP
+                                       - list of files is a special file
+C.record-server   C.rs.git-ssh         openssh + mounted git repo
+C.view-server     C.vs.pdf-page        - input: pdf file + page #
+                                       - output: image of the file
+                                       - no persistence
+C.renderer        C.re.search          search page with results
+C.modifier        C.mo.none
+C.manager         C.ma.docker-compose  - single docker-compose yaml
+C.cache           C.ca.mem             - in-memory cache for records
+C.pxoxy           C.pr.nginx
+C.pxoxy           C.pr.all-records     returns record body by record uuid
+C.search-engine   C.se.pdf-pages       - input: string
+                                       - output: list[pdf file, page #,
+                                         image around]
+C.client          C.cl.firefox
+C.executor        C.ex.none
+================  ===================  ========================================
+
+Later
+-----
+
 - nginx as a web server
 - git for metadata
 - filesystem for records
