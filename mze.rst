@@ -257,7 +257,7 @@ C.client          C.cl.browser      web browser
 When updating python/nginx/etc. versions
 ----------------------------------------
 
-- copy new ``nginx.conf`` file from the image;
+- copy new ``/etc/nginx/conf.d/default.conf`` file from the image;
 
 
 Technologies

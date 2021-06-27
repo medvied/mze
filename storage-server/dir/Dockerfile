@@ -1,9 +1,1 @@
-FROM python:3.9
-
-RUN pip install mypy flake8
-
-RUN pip install aiohttp[speedups]
-
-WORKDIR /data
-
-ENTRYPOINT ["./run.sh"]
+../../Dockerfile.python

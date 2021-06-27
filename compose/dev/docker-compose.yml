@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  pr-nginx-1:
+    image: nginx:1.21
+    depends_on:
+      - ss-dir-1
+    ports:
+      - "80:80"
+    volumes:
+      - "../../proxy/nginx/default.conf:/etc/nginx/conf.d/default.conf"
+      - "../../storage-server/dir/ss-dir.nginx.conf:/etc/nginx/location.d/ss-dir.nginx.conf"
+
+  ss-dir-1:
+    build:
+      dockerfile: "${REPO_ROOT}/storage-server/dir/Dockerfile"
+      context: "./empty"
+    working_dir: "/data/storage-server/dir"
+    volumes:
+      - "../..:/data"
+    environment:
+      - MZE_WEB_LOCATION=/ss-dir-1/
