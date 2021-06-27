@@ -346,6 +346,16 @@ C.client          C.cl.firefox
 C.executor        C.ex.none
 ================  ===================  ========================================
 
+Interaction diagram
+...................
+
+- ``C.cl.firefox`` -> ``C.pr.nginx`` -> (``C.pr.all-records``, ``C.re.search``)
+- ``C.pr.all-records`` -> ``C.ca.mem``
+- ``C.re.search`` -> (``C.ca.mem``, ``C.se.pdf-pages``)
+- ``C.ca.mem`` -> (``C.vs.pdf-page``, ``C.ss.dir``, ``C.rs.git-ssh``)
+- ``C.vs.pdf-page`` -> ``C.ss.dir``
+
+
 Later
 -----
 
