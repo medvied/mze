@@ -213,6 +213,10 @@ Requirements
       - Gantt chart lind of record MUST be supported
     * - R.record.timeline
       - Timeline kind of record MUST be supported
+    * - R.changelog
+      - Per-record, per-link and per-MZE changelogs MUST be supported.
+    * - R.audit-log
+      - Audit log (which also includes read-only access) MUST be supported.
 
 
 Design
