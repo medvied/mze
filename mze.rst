@@ -403,6 +403,34 @@ Later
 - vim to modify
 
 
+API
+===
+
+Storage Server
+--------------
+
+- operations: get, put, head, list, delete
+- parameters
+
+  - instance
+
+    - UUID: specific instance UUID
+    - absent: this instance (or any instance for some cases)
+    - any: any instance is fine
+    - all: (for list, delete) apply to all instances
+
+  - object
+
+    - UUID: object UUID
+    - absent: (for list) any object
+
+  - version
+
+    - UUID: version UUID
+    - absent: latest version
+    - all: all versions
+
+
 Existing implementations
 ========================
 
