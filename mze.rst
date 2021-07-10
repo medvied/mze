@@ -217,6 +217,15 @@ Requirements
       - Per-record, per-link and per-MZE changelogs MUST be supported.
     * - R.audit-log
       - Audit log (which also includes read-only access) MUST be supported.
+    * - R.cli
+      - CLI interface MUST be supported
+    * - R.instance
+      - MZE instance abstraction MUST be supported. Each component
+        implementation that is running somewhere is an instance.
+    * - R.subscription
+      - It MUST be possible to subscribe on events like record operations
+        (create/remove/etc.), appearance of new records with some tags, GET for
+        a record etc.
 
 
 Design
