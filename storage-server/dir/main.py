@@ -16,11 +16,12 @@ starts from 0.
 import os
 import sys
 import uuid
+import aiofiles
 
 from dataclasses import dataclass
 from pathlib import Path
 from aiohttp import web
-from typing import Any, Callable
+from typing import Any, Callable, Awaitable
 
 
 @dataclass
@@ -29,6 +30,7 @@ class RequestContext:
     instance_uuid: uuid.UUID
     params: dict[str, str]
     storage_dir: Path
+    request: web.Request
 
 
 def check_request_context(rctx: RequestContext) -> None:
@@ -56,7 +58,7 @@ def all_versions(record_dir: Path) -> dict[int, str]:
     return {}
 
 
-def handle_list(rctx: RequestContext) -> web.StreamResponse:
+async def handle_list(rctx: RequestContext) -> web.StreamResponse:
     """
     instance is already one of ['all', 'any', instance_uuid] or not specified.
     What could be requested:
@@ -78,7 +80,7 @@ def handle_list(rctx: RequestContext) -> web.StreamResponse:
         if len(versions) > 0:
             if 'version' not in rctx.params:
                 result = {rctx.params['record']:
-                          [sorted(versions.items())[-1][1]]}
+                          [versions[max(versions.keys())]]}
             elif rctx.params['version'] == 'all':
                 result = {rctx.params['record']:
                           [v for k, v in sorted(versions.items())]}
@@ -97,22 +99,49 @@ def handle_list(rctx: RequestContext) -> web.StreamResponse:
                     [v for k, v in sorted(all_versions(record_dir).items())]
             else:
                 result[record_dir.name] = []
-    return web.json_response(result)
+    return web.json_response({str(rctx.instance_uuid): result})
 
 
-def handle_not_implemented_yet(rctx: RequestContext) -> web.StreamResponse:
+async def handle_put(rctx: RequestContext) -> web.StreamResponse:
+    if 'version' in rctx.params:
+        raise web.HTTPBadRequest(reason='version it not yet supported for put')
+    if 'record' in rctx.params:
+        record_uuid = uuid.UUID(rctx.params['record'])
+    else:
+        record_uuid = uuid.uuid4()
+    record_dir = rctx.storage_dir / str(record_uuid)
+    # XXX might be an issue with concurrent put/delete
+    if not record_dir.exists():
+        record_dir.mkdir(exist_ok=True)
+    version_uuid = uuid.uuid4()
+    # XXX handle concurrent puts for the same record
+    versions = all_versions(record_dir)
+    if len(versions) == 0:
+        new_version_num = 0
+    else:
+        new_version_num = max(versions.keys()) + 1
+    new_version = record_dir / f'{new_version_num}-{version_uuid}'
+    async with aiofiles.open(new_version, 'xb') as f:
+        async for data in rctx.request.content.iter_any():
+            await f.write(data)
+    return web.json_response({rctx.instance_uuid:
+                              {record_uuid: [version_uuid]}})
+
+
+async def handle_not_implemented_yet(rctx: RequestContext) -> \
+        web.StreamResponse:
     return web.Response(text='Not implemented yet.')
 
 
 @dataclass
 class OpHandler:
     method: Any
-    handler: Callable[[RequestContext], web.StreamResponse]
+    handler: Callable[[RequestContext], Awaitable[web.StreamResponse]]
 
 
 OPERATIONS: dict[str, OpHandler] = {
     'get': OpHandler(web.get, handle_not_implemented_yet),
-    'put': OpHandler(web.put, handle_not_implemented_yet),
+    'put': OpHandler(web.put, handle_put),
     'head': OpHandler(web.head, handle_not_implemented_yet),
     'list': OpHandler(web.get, handle_list),
     'delete': OpHandler(web.delete, handle_not_implemented_yet),
@@ -130,9 +159,9 @@ async def handler(request: web.Request) -> web.StreamResponse:
     params = {k: v for k, v in request.query.items()}
     print(f'{op=} {request.path=} {params=}', flush=True)
     rctx = RequestContext(op, instance_uuid, params,
-                          request.app['storage_dir'])
+                          request.app['storage_dir'], request)
     check_request_context(rctx)
-    return OPERATIONS[op].handler(rctx)
+    return await OPERATIONS[op].handler(rctx)
 
 
 def main() -> None:

@@ -413,13 +413,20 @@ Storage Server
 
   - list
 
-    - instance: 'any', 'all' or UUID
+    - instance: 'any', 'all', UUID or nothing
     - record: record UUID to get info about specific record, nothing to get all
       records
     - version: version UUID to get a specific record version info, nothing or
       'all' to get all record versions
     - result: json with all record that match criteria. Empty dict if there
       are no such records.
+
+  - put
+
+    - instance: 'any', 'all', UUID or nothing
+    - record: record UUID (to put a specific record) or nothing (to assign
+      new UUID)
+    - version: nothing (for now)
 
 - parameters
 

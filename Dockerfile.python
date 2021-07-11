@@ -2,7 +2,7 @@ FROM python:3.9
 
 RUN pip install mypy flake8
 
-RUN pip install aiohttp[speedups]
+RUN pip install aiohttp[speedups] aiofiles types-aiofiles
 
 WORKDIR /data
 
