@@ -7,6 +7,7 @@ provides HTTP API to serve files from that directory.
 """
 
 import os
+import uuid
 
 from aiohttp import web
 from typing import Any
@@ -22,12 +23,20 @@ OPERATIONS: dict[str, Any] = {
 
 
 def validate_params(instance_uuid: str, params: dict[str, str]) -> None:
-    for k in params:
+    for k, v in params.items():
         if k not in ['instance', 'object', 'version']:
-            raise web.HTTPBadRequest()
-    if params.get('instance') is not None:
-        if params['instance'] not in [instance_uuid, 'any', 'all']:
-            raise web.HTTPBadRequest()
+            raise web.HTTPBadRequest(
+                reason=f'{k} is not one of ["instance", "object", "version"]')
+        if (k, v) in [('instance', 'any'), ('instance', 'all'),
+                      ('version', 'all')]:
+            continue
+        try:
+            if str(uuid.UUID(v)) != v:
+                raise web.HTTPBadRequest(reason='invalid UUID format: '
+                                         f'uuid.UUID("{v}") != "{v}" for {k}')
+        except ValueError as e:
+            raise web.HTTPBadRequest(reason=f'uuid.UUID("{v}") failed: '
+                                     f'{repr(e)}.')
 
 
 async def handler(request: web.Request) -> web.StreamResponse:
