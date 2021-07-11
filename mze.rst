@@ -453,6 +453,7 @@ Storage Server
   - stats - get storage server statistics
   - info - get configuration etc.
   - fsck - execute fsck
+  - health - health check
 
 
 Existing implementations
