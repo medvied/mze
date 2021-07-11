@@ -35,8 +35,8 @@ def validate_params(instance_uuid: str, params: dict[str, str]) -> None:
                 raise web.HTTPBadRequest(reason='invalid UUID format: '
                                          f'uuid.UUID("{v}") != "{v}" for {k}')
         except ValueError as e:
-            raise web.HTTPBadRequest(reason=f'uuid.UUID("{v}") failed: '
-                                     f'{repr(e)}.')
+            raise web.HTTPBadRequest(reason=f'uuid.UUID("{v}") failed '
+                                     f'for "{k}": {repr(e)}.')
 
 
 async def handler(request: web.Request) -> web.StreamResponse:
