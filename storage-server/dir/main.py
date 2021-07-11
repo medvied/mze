@@ -4,25 +4,32 @@
 
 This storage server has a directory where all the data is located and it
 provides HTTP API to serve files from that directory.
+
+Storage format:
+
+object_uuid/version_number-version-uuid
+
+Version numbers are defined as monotonically increasing integer sequence which
+starts from 0.
 """
 
 import os
+import sys
 import uuid
 
+from dataclasses import dataclass
+from pathlib import Path
 from aiohttp import web
-from typing import Any
+from typing import Any, Callable
 
 
-OPERATIONS: dict[str, Any] = {
-    'get': web.get,
-    'put': web.put,
-    'head': web.head,
-    'list': web.get,
-    'delete': web.delete,
-}
+@dataclass
+class RequestContext:
+    instance_uuid: uuid.UUID
+    params: dict[str, str]
 
 
-def validate_params(instance_uuid: str, params: dict[str, str]) -> None:
+def check_params(instance_uuid: uuid.UUID, params: dict[str, str]) -> None:
     for k, v in params.items():
         if k not in ['instance', 'object', 'version']:
             raise web.HTTPBadRequest(
@@ -37,25 +44,75 @@ def validate_params(instance_uuid: str, params: dict[str, str]) -> None:
         except ValueError as e:
             raise web.HTTPBadRequest(reason=f'uuid.UUID("{v}") failed '
                                      f'for "{k}": {repr(e)}.')
+        if k == 'instance' and v != str(instance_uuid):
+            raise web.HTTPBadRequest(
+                reason=f'The request is for instance {v}, '
+                f'but the current instance is {instance_uuid}.')
+
+
+def handle_list(rctx: RequestContext) -> web.StreamResponse:
+    return web.Response(text='Hello, world!')
+
+
+def handle_not_implemented_yet(rctx: RequestContext) -> web.StreamResponse:
+    return web.Response(text='Not implemented yet.')
+
+
+@dataclass
+class OpHandler:
+    method: Any
+    handler: Callable[[RequestContext], web.StreamResponse]
+
+
+OPERATIONS: dict[str, OpHandler] = {
+    'get': OpHandler(web.get, handle_not_implemented_yet),
+    'put': OpHandler(web.put, handle_not_implemented_yet),
+    'head': OpHandler(web.head, handle_not_implemented_yet),
+    'list': OpHandler(web.get, handle_list),
+    'delete': OpHandler(web.delete, handle_not_implemented_yet),
+}
 
 
 async def handler(request: web.Request) -> web.StreamResponse:
+    assert request.path.startswith(request.app['web_location']), \
+        f'{request.path=} {request.app["web_location"]=}'
+    op = request.path[len(request.app['web_location']):]
+    if op[0] == '/':
+        op = op[1:]
+    assert op in OPERATIONS.keys(), f'{op=} {OPERATIONS.keys()=}'
     instance_uuid = request.app['instance_uuid']
     params = {k: v for k, v in request.query.items()}
-    print(f'{params=}', flush=True)
-    validate_params(instance_uuid, params)
-    return web.Response(text='Hello, world!')
+    print(f'{op=} {request.path=} {params=}', flush=True)
+    check_params(instance_uuid, params)
+    req_ctx = RequestContext(instance_uuid, params)
+    return OPERATIONS[op].handler(req_ctx)
 
 
 def main() -> None:
     app = web.Application()
 
     storage_server_dir = web.Application()
-    for op, method in OPERATIONS.items():
-        storage_server_dir.add_routes([method(f'/{op}', handler)])
+    for op, op_handler in OPERATIONS.items():
+        storage_server_dir.add_routes([op_handler.method(f'/{op}', handler)])
     app.add_subapp(os.environ['MZE_WEB_LOCATION'], storage_server_dir)
-    storage_server_dir['instance_uuid'] = os.environ['MZE_INSTANCE_UUID']
-    storage_server_dir['storage_dir'] = os.environ['MZE_STORAGE_DIR']
+    if 'MZE_INSTANCE_UUID' not in os.environ:
+        print('Please set MZE_INSTANCE_UUID. Can\'t start without it.',
+              file=sys.stderr)
+        return
+    instance_uuid_s = os.environ['MZE_INSTANCE_UUID']
+    try:
+        instance_uuid = uuid.UUID(instance_uuid_s)
+        if str(instance_uuid) != instance_uuid_s:
+            print('invalid UUID format for MZE_INSTANCE_UUID: '
+                  f'uuid.UUID("{instance_uuid_s}") = {instance_uuid} which '
+                  f'is not equal to the UUID specified: {instance_uuid_s}.')
+            return
+    except ValueError as e:
+        print(f'uuid.UUID(os.environ["MZE_INSTANCE_UUID"]) failed: {repr(e)}.')
+        return
+    storage_server_dir['web_location'] = os.environ['MZE_WEB_LOCATION']
+    storage_server_dir['instance_uuid'] = instance_uuid
+    storage_server_dir['storage_dir'] = Path(os.environ['MZE_STORAGE_DIR'])
     web.run_app(app, port=80)
 
 

@@ -16,9 +16,11 @@ services:
       dockerfile: "${REPO_ROOT}/storage-server/dir/Dockerfile"
       context: "./empty"
     working_dir: "/data/storage-server/dir"
+    ports:
+      - "11000:80"
     volumes:
       - "../..:/data"
     environment:
-      - MZE_WEB_LOCATION=/ss-dir-1/
+      - MZE_WEB_LOCATION=/ss-dir-1
       - MZE_INSTANCE_UUID=88cd23f8-ad7c-4518-8356-ab2b26b5ec04
       - MZE_STORAGE_DIR=/storage
