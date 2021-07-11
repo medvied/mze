@@ -21,7 +21,7 @@ provides HTTP API to serve files from that directory.
 
 Storage format:
 
-record_uuid/version_number-version-uuid
+record_uuid/version_number-version_uuid
 
 Version numbers are defined as monotonically increasing integer sequence which
 starts from 0.
