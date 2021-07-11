@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import argparse
+
+import requests
+
+
+def storage_server(argv: list[str]) -> None:
+    parser = argparse.ArgumentParser('mze storage-server', allow_abbrev=False)
+    parser.add_argument('cmd',
+                        choices=['get', 'put', 'head', 'list', 'delete'])
+    parser.add_argument('--endpoint', type=str, required=True)
+    parser.add_argument('--instance', type=str)
+    parser.add_argument('--record', type=str)
+    parser.add_argument('--record-version', type=str)
+    parser.add_argument('--filename', type=str)
+    args = parser.parse_args(argv)
+    print(f'{argv=} {args=}')
+    params = {}
+    for arg, param in [('instance', 'instance'), ('record', 'record'),
+                       ('record-version', 'version')]:
+        if arg in vars(args):
+            params[param] = vars(args)[arg]
+    url = f'{args.endpoint}/{args.cmd}'
+    if args.cmd in ['list']:
+        r = requests.get(url, params=params)
+    elif args.cmd == 'put':
+        assert args.filename is not None, args
+        with open(args.filename) as f:
+            r = requests.put(url, params=params, data=f)
+    print(r.text)
+
+
+SUBCOMMANDS = {
+    'ss': storage_server,
+    'storage-server': storage_server,
+}
+
+
+def main() -> None:
+    """
+    ArgumentParser.add_subparsers() is not being used intentionally, to
+    simplify splitting up during refactoring.
+    """
+
+    parser = argparse.ArgumentParser('mze', allow_abbrev=False)
+    parser.add_argument('subcommand', choices=SUBCOMMANDS.keys())
+    args, remaining = parser.parse_known_args()
+    SUBCOMMANDS[args.subcommand](remaining)
+
+
+if __name__ == '__main__':
+    main()
