@@ -410,6 +410,17 @@ Storage Server
 --------------
 
 - operations: get, put, head, list, delete
+
+  - list
+
+    - instance: 'any', 'all' or UUID
+    - record: record UUID to get info about specific record, nothing to get all
+      records
+    - version: version UUID to get a specific record version info, nothing or
+      'all' to get all record versions
+    - result: json with all record that match criteria. Empty dict if there
+      are no such records.
+
 - parameters
 
   - instance
@@ -419,16 +430,22 @@ Storage Server
     - any: any instance is fine
     - all: (for list, delete) apply to all instances
 
-  - object
+  - record
 
-    - UUID: object UUID
-    - absent: (for list) any object
+    - UUID: record UUID
+    - absent: (for list) any record
 
   - version
 
     - UUID: version UUID
     - absent: latest version
     - all: all versions
+
+- future operations
+
+  - stats - get storage server statistics
+  - info - get configuration etc.
+  - fsck - execute fsck
 
 
 Existing implementations

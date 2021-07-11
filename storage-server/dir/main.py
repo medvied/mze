@@ -7,7 +7,7 @@ provides HTTP API to serve files from that directory.
 
 Storage format:
 
-object_uuid/version_number-version-uuid
+record_uuid/version_number-version-uuid
 
 Version numbers are defined as monotonically increasing integer sequence which
 starts from 0.
@@ -25,15 +25,17 @@ from typing import Any, Callable
 
 @dataclass
 class RequestContext:
+    op: str
     instance_uuid: uuid.UUID
     params: dict[str, str]
+    storage_dir: Path
 
 
-def check_params(instance_uuid: uuid.UUID, params: dict[str, str]) -> None:
-    for k, v in params.items():
-        if k not in ['instance', 'object', 'version']:
+def check_request_context(rctx: RequestContext) -> None:
+    for k, v in rctx.params.items():
+        if k not in ['instance', 'record', 'version']:
             raise web.HTTPBadRequest(
-                reason=f'{k} is not one of ["instance", "object", "version"]')
+                reason=f'{k} is not one of ["instance", "record", "version"]')
         if (k, v) in [('instance', 'any'), ('instance', 'all'),
                       ('version', 'all')]:
             continue
@@ -44,14 +46,58 @@ def check_params(instance_uuid: uuid.UUID, params: dict[str, str]) -> None:
         except ValueError as e:
             raise web.HTTPBadRequest(reason=f'uuid.UUID("{v}") failed '
                                      f'for "{k}": {repr(e)}.')
-        if k == 'instance' and v != str(instance_uuid):
+        if k == 'instance' and v != str(rctx.instance_uuid):
             raise web.HTTPBadRequest(
                 reason=f'The request is for instance {v}, '
-                f'but the current instance is {instance_uuid}.')
+                f'but the current instance is {rctx.instance_uuid}.')
+
+
+def all_versions(record_dir: Path) -> dict[int, str]:
+    return {}
 
 
 def handle_list(rctx: RequestContext) -> web.StreamResponse:
-    return web.Response(text='Hello, world!')
+    """
+    instance is already one of ['all', 'any', instance_uuid] or not specified.
+    What could be requested:
+
+    - record and version are UUIDs: return record and version if they are
+      present, return empty dict otherwise
+    - record is UUID, version is absent or version is 'all': return the sorted
+      list of all versions for this record
+    - record is absent, version is UUID: invalid request
+    - record & version are absent: return the list of all records without
+      versions
+    - record is absent, version is 'all': return the list of all records and
+      their versions
+    """
+
+    result: dict[str, list[str]] = {}
+    if 'record' in rctx.params:
+        versions = all_versions(rctx.storage_dir / rctx.params['record'])
+        if len(versions) > 0:
+            if 'version' not in rctx.params:
+                result = {rctx.params['record']:
+                          [sorted(versions.items())[-1][1]]}
+            elif rctx.params['version'] == 'all':
+                result = {rctx.params['record']:
+                          [v for k, v in sorted(versions.items())]}
+            else:
+                if rctx.params['version'] in versions.values():
+                    result = {rctx.params['record']: [rctx.params['version']]}
+    elif 'version' in rctx.params and rctx.params['version'] != 'all':
+        raise web.HTTPBadRequest(
+            reason='list operation requires record or record and version or '
+            'record and version="all", '
+            'but got no record and version != "all".')
+    else:
+        for record_dir in rctx.storage_dir.iterdir():
+            if 'version' in rctx.params:
+                result[record_dir.name] = \
+                    [v for k, v in sorted(all_versions(record_dir).items())]
+            else:
+                result[record_dir.name] = []
+    return web.json_response(result)
 
 
 def handle_not_implemented_yet(rctx: RequestContext) -> web.StreamResponse:
@@ -83,9 +129,10 @@ async def handler(request: web.Request) -> web.StreamResponse:
     instance_uuid = request.app['instance_uuid']
     params = {k: v for k, v in request.query.items()}
     print(f'{op=} {request.path=} {params=}', flush=True)
-    check_params(instance_uuid, params)
-    req_ctx = RequestContext(instance_uuid, params)
-    return OPERATIONS[op].handler(req_ctx)
+    rctx = RequestContext(op, instance_uuid, params,
+                          request.app['storage_dir'])
+    check_request_context(rctx)
+    return OPERATIONS[op].handler(rctx)
 
 
 def main() -> None:
