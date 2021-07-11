@@ -110,9 +110,12 @@ def main() -> None:
     except ValueError as e:
         print(f'uuid.UUID(os.environ["MZE_INSTANCE_UUID"]) failed: {repr(e)}.')
         return
+    storage_dir = Path(os.environ['MZE_STORAGE_DIR'])
+    if not storage_dir.exists():
+        storage_dir.mkdir(parents=True)
     storage_server_dir['web_location'] = os.environ['MZE_WEB_LOCATION']
     storage_server_dir['instance_uuid'] = instance_uuid
-    storage_server_dir['storage_dir'] = Path(os.environ['MZE_STORAGE_DIR'])
+    storage_server_dir['storage_dir'] = storage_dir
     web.run_app(app, port=80)
 
 
