@@ -495,6 +495,7 @@ Alternatives
 - https://en.wikipedia.org/wiki/MyNotex
 - https://en.wikipedia.org/wiki/BasKet_Note_Pads
 - https://en.wikipedia.org/wiki/Gnote
+- https://obsidian.md/features
 
 .. list-table::
 
