@@ -138,8 +138,8 @@ async def handle_put(rctx: RequestContext) -> web.StreamResponse:
     async with aiofiles.open(new_version, 'xb') as f:
         async for data in rctx.request.content.iter_any():
             await f.write(data)
-    return web.json_response({rctx.instance_uuid:
-                              {record_uuid: [version_uuid]}})
+    return web.json_response({str(rctx.instance_uuid):
+                              {str(record_uuid): [str(version_uuid)]}})
 
 
 async def handle_not_implemented_yet(rctx: RequestContext) -> \
