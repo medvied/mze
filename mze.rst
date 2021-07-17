@@ -432,6 +432,12 @@ Storage Server
       new UUID)
     - version: nothing (for now)
 
+  - get
+
+    - instance: 'any', 'all', UUID or nothing
+    - record: record UUID
+    - version: version UUID or nothing (to get the latest version)
+
 - parameters
 
   - instance
