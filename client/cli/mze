@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
+import shutil
 import logging
+import argparse
 
 import requests
 
@@ -45,7 +46,17 @@ def storage_server(argv: list[str]) -> None:
         assert args.filename is not None, args
         with open(args.filename) as f:
             r = requests.put(url, params=params, data=f)
-    print(r.text)
+    elif args.cmd == 'get':
+        assert args.filename is not None, args
+        r = requests.get(url, params=params, stream=True)
+        if r.status_code == 200:
+            r.raw.decode_content = True
+            with open(args.filename, 'wb') as f:
+                shutil.copyfileobj(r.raw, f)
+        else:
+            print(r.text)
+    if args.cmd in ['list', 'put']:
+        print(r.text)
 
 
 SUBCOMMANDS = {

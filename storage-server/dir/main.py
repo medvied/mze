@@ -73,6 +73,7 @@ def check_request_context(rctx: RequestContext) -> None:
 
 
 def all_versions(record_dir: Path) -> dict[int, str]:
+    assert record_dir.exists(), record_dir
     all_files = [f.name for f in record_dir.iterdir()]
     logger.debug(f'{all_files=}')
     result: dict[int, str] = {}
@@ -133,6 +134,7 @@ async def handle_list(rctx: RequestContext) -> web.StreamResponse:
 
 
 async def handle_put(rctx: RequestContext) -> web.StreamResponse:
+    # TODO check instance
     if 'version' in rctx.params:
         raise web.HTTPBadRequest(reason='version it not yet supported for put')
     if 'record' in rctx.params:
@@ -158,6 +160,33 @@ async def handle_put(rctx: RequestContext) -> web.StreamResponse:
                               {str(record_uuid): [str(version_uuid)]}})
 
 
+async def handle_get(rctx: RequestContext) -> web.StreamResponse:
+    # TODO check instance
+    if 'record' not in rctx.params:
+        raise web.HTTPBadRequest(
+            reason='record UUID is required for get requests')
+    else:
+        record_dir = rctx.storage_dir / rctx.params['record']
+    if not record_dir.exists():
+        raise web.HTTPNotFound(
+            reason=f'record {rctx.params["record"]} doesn\'t exist.')
+    av = all_versions(record_dir)
+    if 'version' in rctx.params:
+        version_uuid = rctx.params["version"]
+        if version_uuid not in av.values():
+            raise web.HTTPNotFound(
+                reason=f'record {rctx.params["record"]} '
+                f'doesn\'t have version {version_uuid}.')
+        av_reverse = {v: k for k, v in av.items()}
+        assert len(av) == len(av_reverse), (av, av_reverse)
+        version_number = av_reverse[version_uuid]
+    else:
+        version_number = max(av.keys())
+        version_uuid = av[version_number]
+    return web.FileResponse(
+        path=record_dir / f'{version_number}-{version_uuid}')
+
+
 async def handle_not_implemented_yet(rctx: RequestContext) -> \
         web.StreamResponse:
     return web.Response(text='Not implemented yet.')
@@ -170,7 +199,7 @@ class OpHandler:
 
 
 OPERATIONS: dict[str, OpHandler] = {
-    'get': OpHandler(web.get, handle_not_implemented_yet),
+    'get': OpHandler(web.get, handle_get),
     'put': OpHandler(web.put, handle_put),
     'head': OpHandler(web.head, handle_not_implemented_yet),
     'list': OpHandler(web.get, handle_list),
