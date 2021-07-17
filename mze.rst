@@ -277,6 +277,16 @@ When updating python/nginx/etc. versions
 - copy new ``/etc/nginx/conf.d/default.conf`` file from the image;
 
 
+URI
+---
+
+Scheme::
+
+        mze://instance_UUID/record_or_link_UUID/version_UUID?k=v&k1=v1#fragment
+        ^                                                     ^
+        protocol                                           query
+
+
 Technologies
 ============
 
