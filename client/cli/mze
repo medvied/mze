@@ -34,9 +34,10 @@ def storage_server(argv: list[str]) -> None:
     logger.debug(f'{argv=} {args=}')
     params = {}
     for arg, param in [('instance', 'instance'), ('record', 'record'),
-                       ('record-version', 'version')]:
+                       ('record_version', 'version')]:
         if arg in vars(args):
             params[param] = vars(args)[arg]
+    logger.debug(f'{params=}')
     url = f'{args.endpoint}/{args.cmd}'
     if args.cmd in ['list']:
         r = requests.get(url, params=params)
