@@ -519,9 +519,10 @@ Alternatives
       -
 
 References
-----------
+==========
 
 - https://typesense.org/about/
+- https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax
 
 
 Ideas
