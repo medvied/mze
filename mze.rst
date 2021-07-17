@@ -287,6 +287,36 @@ Scheme::
         protocol                                           query
 
 
+Metadata
+--------
+
+- UUID
+- version UUID
+- URI
+- tags
+- attributes
+
+
+MZE attributes
+--------------
+
+- MZE attributes start from 'mze.'
+- common
+
+  - mze.kind = record | link
+  - mze.name = human_readable_name_of_the_record_like_filename
+
+- record
+
+  - mze.data = URI
+
+- link
+
+  - mze.from = URI
+  - mze.to = URI
+  - mze.directed = bool
+
+
 Technologies
 ============
 
@@ -474,6 +504,17 @@ Storage Server
   - info - get configuration etc.
   - fsck - execute fsck
   - health - health check
+
+
+Record Server
+-------------
+
+- operations on tags and attributes
+- tag: a string
+- attribute: kv pair
+- limitations: tags, keys and values MUST NOT have '\n' inside
+- tag API: add, del, get
+- attribute API: set, del, get
 
 
 Existing implementations
