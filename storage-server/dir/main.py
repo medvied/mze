@@ -30,12 +30,16 @@ starts from 0.
 import os
 import sys
 import uuid
+import logging
 import aiofiles
 
 from dataclasses import dataclass
 from pathlib import Path
 from aiohttp import web
 from typing import Any, Callable, Awaitable
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -69,7 +73,16 @@ def check_request_context(rctx: RequestContext) -> None:
 
 
 def all_versions(record_dir: Path) -> dict[int, str]:
-    return {}
+    all_files = [f.name for f in record_dir.iterdir()]
+    logger.debug(f'{all_files=}')
+    result: dict[int, str] = {}
+    for v, u in [(int(s[:s.index('-')]), s[s.index('-') + 1:])
+                 for s in all_files]:
+        assert v not in result, (v, u, result)
+        result[v] = u
+    logger.debug(f'{result=}')
+    assert not (set(result.keys()) ^ set(range(len(result)))), result
+    return result
 
 
 async def handle_list(rctx: RequestContext) -> web.StreamResponse:
@@ -101,18 +114,21 @@ async def handle_list(rctx: RequestContext) -> web.StreamResponse:
             else:
                 if rctx.params['version'] in versions.values():
                     result = {rctx.params['record']: [rctx.params['version']]}
-    elif 'version' in rctx.params and rctx.params['version'] != 'all':
-        raise web.HTTPBadRequest(
-            reason='list operation requires record or record and version or '
-            'record and version="all", '
-            'but got no record and version != "all".')
-    else:
+    elif 'version' not in rctx.params or rctx.params['version'] == 'all':
+        d = [r for r in rctx.storage_dir.iterdir()]
+        logger.debug(f'{d=}')
         for record_dir in rctx.storage_dir.iterdir():
             if 'version' in rctx.params:
                 result[record_dir.name] = \
                     [v for k, v in sorted(all_versions(record_dir).items())]
             else:
                 result[record_dir.name] = []
+    else:
+        raise web.HTTPBadRequest(
+            reason='list operation requires record or record and version or '
+            'record and version="all", '
+            'but got no record and version != "all".')
+    logger.debug(f'{result=}')
     return web.json_response({str(rctx.instance_uuid): result})
 
 
@@ -179,6 +195,11 @@ async def handler(request: web.Request) -> web.StreamResponse:
 
 
 def main() -> None:
+    logging.basicConfig(
+        format='%(asctime)s %(thread)d %(levelname)s '
+        '%(pathname)s:%(lineno)d:%(funcName)s %(message)s',
+        level=logging.DEBUG)
+
     app = web.Application()
 
     storage_server_dir = web.Application()
