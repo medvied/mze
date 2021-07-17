@@ -65,6 +65,10 @@ Requirements
       - Each record and each link have their own UUID.
     * - R.git
       - Each record and link are stored in git.
+    * - R.record.immutable
+      - Records that couldn't be changed MUST be supported.
+    * - R.record.mutable
+      - Recrods that could be changed MUST be supported.
     * - R.record.image
       - Image records are supported.
     * - R.record.sound
