@@ -13,8 +13,12 @@
 # limitations under the License.
 
 import argparse
+import logging
 
 import requests
+
+
+logger = logging.getLogger(__name__)
 
 
 def storage_server(argv: list[str]) -> None:
@@ -27,7 +31,7 @@ def storage_server(argv: list[str]) -> None:
     parser.add_argument('--record-version', type=str)
     parser.add_argument('--filename', type=str)
     args = parser.parse_args(argv)
-    print(f'{argv=} {args=}')
+    logger.debug(f'{argv=} {args=}')
     params = {}
     for arg, param in [('instance', 'instance'), ('record', 'record'),
                        ('record-version', 'version')]:
@@ -54,6 +58,11 @@ def main() -> None:
     ArgumentParser.add_subparsers() is not being used intentionally, to
     simplify splitting up during refactoring.
     """
+
+    logging.basicConfig(
+        format='%(asctime)s %(thread)d %(levelname)s '
+        '%(pathname)s:%(lineno)d:%(funcName)s %(message)s',
+        level=logging.DEBUG)
 
     parser = argparse.ArgumentParser('mze', allow_abbrev=False)
     parser.add_argument('subcommand', choices=SUBCOMMANDS.keys())
