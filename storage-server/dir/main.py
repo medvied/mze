@@ -154,6 +154,7 @@ async def handle_put(rctx: RequestContext) -> web.StreamResponse:
         new_version_num = max(versions.keys()) + 1
     new_version = record_dir / f'{new_version_num}-{version_uuid}'
     async with aiofiles.open(new_version, 'xb') as f:
+        # TODO handle partial upload
         async for data in rctx.request.content.iter_any():
             await f.write(data)
     return web.json_response({str(rctx.instance_uuid):
