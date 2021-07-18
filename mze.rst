@@ -249,6 +249,9 @@ C.pxoxy           C.pr   proxy: frontend for user
 C.search-engine   C.se   search engine: a way to find records
 C.client          C.cl   client: browser, neovim, CLI
 C.executor        C.ex   executor: automatic actions
+
+C.storage-client  C.scl  client part for C.ss
+C.record-client   C.rcl  client part for C.rs
 ================  =====  ======================================================
 
 ================  ================  ===========================================
