@@ -446,6 +446,12 @@ Later
 - rst2html5 renderer
 - vim to modify
 
+TODO
+====
+
+- a script to generate & check copyright header for all files in the repo
+- CI to check everything pre-commit & post-commit
+
 
 API
 ===
@@ -586,3 +592,4 @@ Ideas
 =====
 
 - ``C.manager`` also collects all the logs and makes them available as records
+- Original Zettelkasten as test data
