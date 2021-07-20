@@ -596,4 +596,7 @@ Ideas
 =====
 
 - ``C.manager`` also collects all the logs and makes them available as records
-- Original Zettelkasten as test data
+- The original Zettelkasten as a test data
+- query like "choose:date", and the datepicker appears below. "choose:contry",
+  and the list of all attributes country=something appear bellow, which allows
+  filtering by clicking on them.
