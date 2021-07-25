@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 #
 # Copyright 2021 Maksym Medvied
 #
@@ -14,13 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eux
+class StorageServer:
+    pass
 
-export PYTHONPATH="/data/src:${PYTHONPATH:-}"
-export MYPYPATH="${PYTHONPATH}"
 
-python -m flake8 *.py
-python -m mypy --strict --warn-unreachable \
-	--show-error-context --show-error-codes --pretty *.py
-
-exec python main.py
+class StorageClient:
+    pass

@@ -39,7 +39,14 @@ from aiohttp import web
 from typing import Any, Callable, Awaitable
 
 
+import mze.api
+
+
 logger = logging.getLogger(__name__)
+
+
+class StorageServerDir(mze.api.StorageServer):
+    pass
 
 
 @dataclass
