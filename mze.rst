@@ -567,6 +567,7 @@ Alternatives
 - https://en.wikipedia.org/wiki/BasKet_Note_Pads
 - https://en.wikipedia.org/wiki/Gnote
 - https://obsidian.md/features
+- https://www.dendron.so/
 
 .. list-table::
 
