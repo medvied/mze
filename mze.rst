@@ -230,6 +230,10 @@ Requirements
       - It MUST be possible to subscribe on events like record operations
         (create/remove/etc.), appearance of new records with some tags, GET for
         a record etc.
+    * - R.view.video-from-description
+      - It MUST be possible to define a text (which is rendered as a still
+        image) and a sound file and view them as a video with text-as-image as
+        video and sound file and sound in the video.
 
 
 Design
