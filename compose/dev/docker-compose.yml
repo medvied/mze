@@ -31,8 +31,8 @@ services:
 
   ss-dir-1:
     build:
-      dockerfile: "${REPO_ROOT}/storage-server/dir/Dockerfile"
-      context: "./empty"
+      dockerfile: "storage-server/dir/Dockerfile"
+      context: "${REPO_ROOT}"
     working_dir: "/data/storage-server/dir"
     ports:
       - "11001:80"
@@ -46,8 +46,8 @@ services:
 
   ss-dir-2:
     build:
-      dockerfile: "${REPO_ROOT}/storage-server/dir/Dockerfile"
-      context: "./empty"
+      dockerfile: "storage-server/dir/Dockerfile"
+      context: "${REPO_ROOT}"
     working_dir: "/data/storage-server/dir"
     ports:
       - "11002:80"
@@ -61,8 +61,8 @@ services:
 
   rs-file-on-ss-1:
     build:
-      dockerfile: "${REPO_ROOT}/record-server/file-on-ss/Dockerfile"
-      context: "./empty"
+      dockerfile: "record-server/file-on-ss/Dockerfile"
+      context: "${REPO_ROOT}"
     depends_on:
       - ss-dir-2
     working_dir: "/data/record-server/file-on-ss"

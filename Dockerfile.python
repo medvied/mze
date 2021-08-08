@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # Copyright 2021 Maksym Medvied
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.9
-
-# TODO add more flake8 plugins
-RUN pip install mypy flake8
-
+FROM python:3.9 AS common
 RUN pip install aiohttp[speedups] aiofiles types-aiofiles
-
 WORKDIR /data
 
+FROM common AS check_and_build
+RUN pip install mypy flake8  # TODO add more flake8 plugins
+RUN pip install build
+COPY . .
+RUN ./check.sh
+RUN python -m build
+RUN pip install dist/mze-*.whl
+
+FROM common AS exec
+COPY --from=check_and_build /data/dist/mze-*.tar.gz /tmp
+RUN pip install /tmp/mze-*.tar.gz
+RUN rm -rvf /tmp/mze-*.tar.gz
 ENTRYPOINT ["./run.sh"]
