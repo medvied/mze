@@ -16,4 +16,10 @@
 
 set -eux
 
-exec python main.py
+export PYTHONPATH="/data/src:${PYTHONPATH:-}"
+export MYPYPATH="${PYTHONPATH}"
+export MYPY_CHECK="${MYPY_CHECK:-*.py}"
+
+python -m flake8 --show-source --statistics
+python -m mypy --strict --warn-unreachable \
+	--show-error-context --show-error-codes --pretty ${MYPY_CHECK}
