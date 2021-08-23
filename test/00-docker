@@ -34,7 +34,7 @@ def main() -> None:
     for target, tag in targets_and_tags:
         cmd = docker['build', '--file', 'Dockerfile.python',
                      '--target', target, '--tag', tag, '.']
-        print(' '.join(cmd.formulate()))
+        print(' '.join(cmd.formulate()), flush=True)
         cmd & FG
 
 
