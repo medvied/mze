@@ -13,3 +13,38 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
+import os
+
+from plumbum import local, FG
+
+
+mypy = local['python'][
+    '-m', 'mypy',
+    # '--verbose',
+    '--strict',
+    '--warn-unreachable',
+    '--show-error-context',
+    '--show-error-codes',
+    '--pretty',
+    '--no-incremental',
+]
+
+PYTHONPATH = '/data/src'
+TARGETS = [
+    ['-p', 'mze'],
+]
+
+
+def main() -> None:
+    global PYTHONPATH
+    if 'PYTHONPATH' in os.environ:
+        PYTHONPATH = f'{PYTHONPATH}:{os.environ["PYTHONPATH"]}'
+    with local.env(PYTHONPATH=PYTHONPATH, MYPYPATH=PYTHONPATH):
+        for target in TARGETS:
+            mypy[target] & FG
+
+
+if __name__ == '__main__':
+    main()
