@@ -27,6 +27,9 @@ FROM common AS check
 # TODO add more flake8 plugins
 RUN pip install mypy flake8
 
+# for the code in test/ only
+RUN pip install plumbum
+
 
 FROM common AS build
 

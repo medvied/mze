@@ -13,3 +13,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
+import glob
+
+from plumbum import local, FG
+
+
+flake8 = local['python']['-m', 'flake8',  # '--verbose',
+                         '--show-source', '--statistics']
+
+TARGETS = [
+    *sorted(glob.glob('test/*')),
+    'src/',
+]
+
+
+def main() -> None:
+    for target in TARGETS:
+        flake8[target] & FG
+
+
+if __name__ == '__main__':
+    main()
