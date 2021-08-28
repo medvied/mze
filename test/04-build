@@ -14,12 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+'''
+TODO generate gpg signatures
+'''
 
-from plumbum import local, FG
+
+from plumbum import FG
+from plumbum.cmd import python
 
 
 def main() -> None:
-    local['python']['-m', 'build'] & FG
+    python['-m', 'build'] & FG
 
 
 if __name__ == '__main__':

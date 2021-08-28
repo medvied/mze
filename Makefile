@@ -3,7 +3,8 @@
 	ci-01-docker \
 	ci-02-flake8 \
 	ci-03-mypy \
-	ci-04-build
+	ci-04-build \
+	ci-05-upload-local
 
 define run-docker =
 	docker run --rm --mount type=bind,src=$(shell pwd),dst=/data
@@ -26,3 +27,11 @@ ci-03-mypy:
 
 ci-04-build:
 	$(run-docker) --entrypoint test/04-build mze-build:test
+
+ci-05-upload-local:
+	touch .pypirc
+	touch pip.conf
+	$(run-docker) \
+		--mount type=bind,src=$(shell pwd)/.pypirc,dst=/root/.pypirc \
+		--mount type=bind,src=$(shell pwd)/pip.conf,dst=/root/.config/pip/pip.conf \
+		--entrypoint test/05-upload-local mze-build:test

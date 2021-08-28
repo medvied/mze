@@ -1,5 +1,5 @@
-# syntax=docker/dockerfile:1
-
+#!/usr/bin/env python3
+#
 # Copyright 2021 Maksym Medvied
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,31 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO add more distributions
-FROM python:3.9 AS common
-
-RUN pip install aiohttp[speedups] aiofiles types-aiofiles
-
-WORKDIR /data
+'''
+TODO use local mirror for the packages (dependencies)
+'''
 
 
-FROM common AS check
-
-# TODO add more flake8 plugins
-RUN pip install mypy flake8
-
-# for the code in test/ only
-RUN pip install plumbum
+from plumbum import local, FG
+from plumbum.cmd import python
 
 
-FROM common AS build
+def main() -> None:
+    version = local['grep']['^version = ', 'setup.cfg']().strip().split()[-1]
+    print(f'Current version: {version}', flush=True)
+    packages = [f'dist/{s}' for s in
+                [f'mze-{version}.tar.gz',
+                 f'mze-{version}-py3-none-any.whl']]
+    python['-m', 'twine', 'upload', '--repository', 'local'][packages] & FG
 
-RUN pip install build twine
 
-# to run test/04-build itself
-RUN pip install plumbum
-
-
-FROM common AS exec
-
-ENTRYPOINT ["./run.sh"]
+if __name__ == '__main__':
+    main()
