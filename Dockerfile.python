@@ -35,6 +35,9 @@ FROM common AS build
 
 RUN pip install build
 
+# to run test/04-build itself
+RUN pip install plumbum
+
 
 FROM common AS exec
 
