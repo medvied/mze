@@ -1,0 +1,8 @@
+[distutils]
+index-servers =
+	local
+
+[local]
+repository = ${MZE_CI_PYPI_LOCAL_URL}
+username = ${MZE_CI_PYPI_LOCAL_USER}
+password = ${MZE_CI_PYPI_LOCAL_PASSWORD}

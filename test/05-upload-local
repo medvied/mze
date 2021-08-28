@@ -16,8 +16,12 @@
 
 '''
 TODO use local mirror for the packages (dependencies)
+TODO remove all versions of package before upload
+TODO unhardcode root user
 '''
 
+
+from pathlib import Path
 
 from plumbum import local, FG
 from plumbum.cmd import python
@@ -26,6 +30,11 @@ from plumbum.cmd import python
 def main() -> None:
     version = local['grep']['^version = ', 'setup.cfg']().strip().split()[-1]
     print(f'Current version: {version}', flush=True)
+    Path('/root/.config/pip').mkdir(parents=True)
+    for f, target in [('pip.conf', '/root/.config/pip/pip.conf'),
+                      ('.pypirc', '/root/.pypirc')]:
+        print(f'Setting up {target}.', flush=True)
+        ((local['envsubst'] < f'cicd/{f}.local.envsubst') > target)()
     packages = [f'dist/{s}' for s in
                 [f'mze-{version}.tar.gz',
                  f'mze-{version}-py3-none-any.whl']]

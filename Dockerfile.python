@@ -38,6 +38,11 @@ RUN pip install build twine
 # to run test/04-build itself
 RUN pip install plumbum
 
+RUN apt update
+
+# for envsubst
+RUN apt install -y gettext
+
 
 FROM common AS exec
 
