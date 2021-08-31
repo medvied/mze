@@ -4,7 +4,10 @@
 	ci-02-flake8 \
 	ci-03-mypy \
 	ci-04-build \
-	ci-05-upload-local
+	ci-05-upload-local \
+	ci-10-install \
+	ci-20-unit \
+	ci-30-integration
 
 define run-docker =
 	docker run --rm --mount type=bind,src=$(shell pwd),dst=/data
@@ -32,3 +35,12 @@ ci-05-upload-local:
 	$(run-docker) \
 		--env-file cicd/env.local.list \
 		--entrypoint test/05-upload-local mze-build:test
+
+ci-10-install:
+	$(run-docker) --entrypoint test/10-install mze:test
+
+ci-20-unit:
+	$(run-docker) --entrypoint test/20-unit mze:test
+
+ci-30-integration:
+	$(run-docker) --entrypoint test/30-integration mze:test
