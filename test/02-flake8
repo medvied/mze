@@ -15,17 +15,17 @@
 # limitations under the License.
 
 
-import glob
-
 from plumbum import local, FG
+
+from common import common
 
 
 flake8 = local['python']['-m', 'flake8',  # '--verbose',
                          '--show-source', '--statistics']
 
 TARGETS = [
-    *sorted(glob.glob('test/*')),
-    *sorted(glob.glob('test/common/*')),
+    *common.python_file_list('test/*'),
+    *common.python_file_list('test/common/*'),
     'src/',
 ]
 

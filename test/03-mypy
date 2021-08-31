@@ -20,6 +20,8 @@ import glob
 
 from plumbum import local, FG
 
+from common import common
+
 
 mypy = local['python'][
     '-m', 'mypy',
@@ -36,7 +38,9 @@ mypy = local['python'][
 PYTHONPATH = '/data/src'
 TARGETS = [
     ['-p', 'mze'],
-    *[[s] for s in sorted(glob.glob('test/common/*'))],
+    *[[s] for s in [
+        *common.python_file_list('test/common/*'),
+    ]],
 ]
 
 

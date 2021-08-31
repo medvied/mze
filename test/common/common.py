@@ -15,9 +15,11 @@
 # limitations under the License.
 
 
+import glob
+
 from pathlib import Path
 
-from plumbum import local
+from plumbum import local  # type: ignore
 
 
 def use_local_pypi() -> None:
@@ -26,3 +28,10 @@ def use_local_pypi() -> None:
                       ('.pypirc', '/root/.pypirc')]:
         print(f'Setting up {target}.', flush=True)
         ((local['envsubst'] < f'cicd/{f}.local.envsubst') > target)()
+
+
+def python_file_list(s: str) -> list[str]:
+    return [s for s in sorted(glob.glob(s))
+            if not any([s.endswith(x) for x in [
+                '/__pycache__',
+            ]])]
