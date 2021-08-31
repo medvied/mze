@@ -16,6 +16,7 @@
 
 
 import os
+import glob
 
 from plumbum import local, FG
 
@@ -31,9 +32,11 @@ mypy = local['python'][
     '--no-incremental',
 ]
 
+# TODO use relative dir
 PYTHONPATH = '/data/src'
 TARGETS = [
     ['-p', 'mze'],
+    *[[s] for s in sorted(glob.glob('test/common/*'))],
 ]
 
 

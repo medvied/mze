@@ -1,5 +1,5 @@
-# syntax=docker/dockerfile:1
-
+#!/usr/bin/env python3
+#
 # Copyright 2021 Maksym Medvied
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,29 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO add more distributions
-FROM python:3.9 AS common
 
-RUN pip install aiohttp[speedups] aiofiles types-aiofiles plumbum
+from pathlib import Path
 
-RUN apt update
-
-# for envsubst
-RUN apt install -y gettext
-
-WORKDIR /data
+from plumbum import local
 
 
-FROM common AS check
-
-# TODO add more flake8 plugins
-RUN pip install mypy flake8
-
-FROM common AS build
-
-RUN pip install build twine
-
-
-FROM common AS exec
-
-ENTRYPOINT ["./run.sh"]
+def use_local_pypi() -> None:
+    Path('/root/.config/pip').mkdir(parents=True)
+    for f, target in [('pip.conf', '/root/.config/pip/pip.conf'),
+                      ('.pypirc', '/root/.pypirc')]:
+        print(f'Setting up {target}.', flush=True)
+        ((local['envsubst'] < f'cicd/{f}.local.envsubst') > target)()

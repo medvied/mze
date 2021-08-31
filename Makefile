@@ -37,7 +37,9 @@ ci-05-upload-local:
 		--entrypoint test/05-upload-local mze-build:test
 
 ci-10-install:
-	$(run-docker) --entrypoint test/10-install mze:test
+	$(run-docker) \
+		--env-file cicd/env.local.list \
+		--entrypoint test/10-install mze:test
 
 ci-20-unit:
 	$(run-docker) --entrypoint test/20-unit mze:test

@@ -25,6 +25,7 @@ flake8 = local['python']['-m', 'flake8',  # '--verbose',
 
 TARGETS = [
     *sorted(glob.glob('test/*')),
+    *sorted(glob.glob('test/common/*')),
     'src/',
 ]
 

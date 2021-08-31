@@ -13,3 +13,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
+from plumbum import local, FG
+
+from common import common
+
+
+def main() -> None:
+    common.use_local_pypi()
+    local['pip']['install', '--user', 'mze'] & FG
+    local['pip']['uninstall', '--yes', 'mze'] & FG
+    local['pip']['install', 'mze'] & FG
+
+
+if __name__ == '__main__':
+    main()
