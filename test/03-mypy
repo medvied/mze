@@ -16,7 +16,6 @@
 
 
 import os
-import glob
 
 from plumbum import local, FG
 
