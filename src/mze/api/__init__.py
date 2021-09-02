@@ -1,5 +1,5 @@
-from .storage_server import StorageServer
-from .storage_server import StorageClient
+from .storage import StorageServer
+from .storage import StorageClient
 
 __all__ = [
     'StorageServer',

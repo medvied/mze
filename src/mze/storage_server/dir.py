@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""C.ss.dir: a directory is served directly over HTTP
+"""C.sts.dir: a directory is served directly over HTTP
 
 This storage server has a directory where all the data is located and it
 provides HTTP API to serve files from that directory.

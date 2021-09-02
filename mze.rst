@@ -242,7 +242,7 @@ Design
 ================  =====  ======================================================
 component         short  description
 ================  =====  ======================================================
-C.storage-server  C.ss   storage server: blob & alike storage
+C.storage         C.st   storage client/server: blob & alike storage
 C.record-server   C.rs   record server: kv & complex data structures
 C.view-server     C.vs   view server: transform data to a different form
 C.renderer        C.re   renderer: put the record together
@@ -254,15 +254,16 @@ C.search-engine   C.se   search engine: a way to find records
 C.client          C.cl   client: browser, neovim, CLI
 C.executor        C.ex   executor: automatic actions
 
-C.storage-client  C.scl  client part for C.ss
+C.storage-server  C.sts  server part for C.st
+C.storage-client  C.stc  client part for C.st
 C.record-client   C.rcl  client part for C.rs
 ================  =====  ======================================================
 
 ================  ================  ===========================================
 kind              component         description
 ================  ================  ===========================================
-C.storage-server  C.ss.git          git
-.                 C.ss.s3           AWS S3
+C.storage-server  C.sts.git         git
+.                 C.sts.s3          AWS S3
 C.record-server
 C.view-server
 C.renderer        C.re.rst2html5
@@ -396,7 +397,7 @@ First
 ================  ===================  ========================================
 role              name                 description
 ================  ===================  ========================================
-C.storage-server  C.ss.dir             - a directory is served directly over
+C.storage-server  C.sts.dir            - a directory is served directly over
                                          HTTP
                                        - list of files is a special file
 C.record-server   C.rs.git-ssh         openssh + mounted git repo
@@ -422,21 +423,21 @@ Interaction diagram
 - ``C.cl.firefox`` -> ``C.pr.nginx`` -> (``C.pr.all-records``, ``C.re.search``)
 - ``C.pr.all-records`` -> ``C.ca.mem``
 - ``C.re.search`` -> (``C.ca.mem``, ``C.se.pdf-pages``)
-- ``C.ca.mem`` -> (``C.vs.pdf-page``, ``C.ss.dir``, ``C.rs.git-ssh``)
-- ``C.vs.pdf-page`` -> ``C.ss.dir``
+- ``C.ca.mem`` -> (``C.vs.pdf-page``, ``C.sts.dir``, ``C.rs.git-ssh``)
+- ``C.vs.pdf-page`` -> ``C.sts.dir``
 
 Implementation plan
 ...................
 
 - ``C.pr.nginx``: reverse proxy for ``C.pr.all-records``, ``C.re.search`` and
-  for debugging: ``C.ss.dir``, ``C.vs.pdf-page``, ``C.ca.mem``,
+  for debugging: ``C.sts.dir``, ``C.vs.pdf-page``, ``C.ca.mem``,
   ``C.se.pdf-page``.
-- ``C.ss.dir``: web server, serve files from a dir + special filename for file
+- ``C.sts.dir``: web server, serve files from a dir + special filename for file
   list
 - ``C.rs.git-ssh``: openssh + mounted git repo
 - ``C.vs.pdf-page``: web server, input: (pdf filename, page #), output: image
 - ``C.ca.mem``: input: web request, output: result from cache or querieng this
-  data from ``C.ss.dir``, ``C.vs.pdf-page``
+  data from ``C.sts.dir``, ``C.vs.pdf-page``
 - ``C.se.pdf-page``: input: string, output: list[pdf file, page #]
 - ``C.re.search``: input: search string, output: web page with search string +
   results
