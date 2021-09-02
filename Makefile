@@ -1,4 +1,5 @@
 .PHONY: build \
+	test \
 	ci-00-license-headers \
 	ci-01-docker \
 	ci-02-flake8 \
@@ -15,6 +16,11 @@ endef
 
 build:
 	docker build -f Dockerfile.python .
+
+test: ci-00-license-headers \
+	ci-02-flake8 ci-03-mypy \
+	ci-04-build ci-05-upload-local ci-10-install \
+	ci-20-unit ci-30-integration ;
 
 ci-00-license-headers:
 	test/00-license-headers
