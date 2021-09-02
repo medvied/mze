@@ -163,9 +163,75 @@ TODO
 
 '''
 
-class StorageServer:
+import uuid
+
+from abc import ABC, abstractmethod
+from typing import Optional
+
+
+class BlobId:
+    bid: uuid.UUID
+    bversion: Optional[uuid.UUID]
+
+
+class BlobInfo:
+    info: dict[str, str]
+
+
+class BlobData:
+    data: bytes
+
+
+class Storage(ABC):
+    '''
+    Subclasses of this class implement the abstract methods.
+    In combination with StorageServer and StorageClient this allows to separate
+    network transport from Storage implementation.
+
+    Example:
+    #. Make StorageDir(Storage) and implement abstract methods that are using
+      files and directories to store the data.
+    #. Make StorageServerHTTP(StorageServer) which receives requests over HTTP
+       and calls the abstract methods to execute them.
+    #. Make StorageDirHTTP(StorageServerHTTP, StorageDir). This would join both
+       transport and implementation.
+    #. Make StorageClientHTTP(StorageClient) which implements abstract methods
+       of Storage by making requests to StorageServerHTTP over HTTP. This would
+       allow to use StorageServerHTTP over the network.
+    #. Make StorageClientDir(StorageClient, StorageDir). It would be a Storage
+       Client which uses local directories and files to store the data.
+    '''
+    @abstractmethod
+    def get(self, bids: list[BlobId]) -> list[Optional[BlobData]]:
+        pass
+
+    @abstractmethod
+    def put(self, blobs: list[tuple[BlobId, BlobInfo, BlobData]]) -> \
+            list[Optional[BlobInfo]]:
+        pass
+
+    @abstractmethod
+    def head(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
+        pass
+
+    @abstractmethod
+    def catalog(self) -> list[BlobInfo]:
+        pass
+
+    @abstractmethod
+    def delete(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
+        pass
+
+
+class StorageServer(Storage):
+    '''
+    Subclasses of this class call abstract methods of Storage.
+    '''
     pass
 
 
-class StorageClient:
+class StorageClient(Storage):
+    '''
+    Subclasses of this class implement abstract methods of Storage.
+    '''
     pass
