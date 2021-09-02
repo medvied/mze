@@ -29,3 +29,8 @@ Use S3 protocol instead of custom S3-like protocol
   - protocol extensions may be needed
   - limitations would be there in MZE implementation which may reduce the
     amount of S3 tools that could use MZE implementation
+
+- ideas
+
+  - implement S3 in addition to the internal protocol. This would allow to
+    inspect the data through S3 and use internal protocol internally.
