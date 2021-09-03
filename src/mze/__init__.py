@@ -1,4 +1,4 @@
-from mze.storage_server.dir import StorageDir
+from mze.storage.dir import StorageDir
 
 __all__ = [
     'StorageDir',

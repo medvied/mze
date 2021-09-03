@@ -15,4 +15,4 @@
 # limitations under the License.
 
 
-from mze.storage_server.test import *
+from mze.storage.test import *
