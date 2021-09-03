@@ -19,33 +19,106 @@
 This storage server has a directory where all the data is located and it
 provides HTTP API to serve files from that directory.
 
-Storage format:
-
-record_uuid/version_number-version_uuid
-
-Version numbers are defined as monotonically increasing integer sequence which
-starts from 0.
+Storage format: just plain files in the dir with UUID as filename.
 """
 
 import os
 import sys
 import uuid
+import shutil
 import logging
+import pathlib
 import aiofiles
 
 from dataclasses import dataclass
 from pathlib import Path
 from aiohttp import web
-from typing import Any, Callable, Awaitable
+from typing import Any, Callable, Awaitable, Optional
 
-
-import mze.api
+from mze.api.storage import BlobId, BlobInfo, BlobData, Storage
 
 
 logger = logging.getLogger(__name__)
 
 
-class StorageServerDir(mze.api.StorageServer):
+class StorageDir(Storage):
+    path: pathlib.Path
+
+    def init(self, cfg: dict[str, Any]) -> None:
+        """
+        Parameters in cfg:
+        path: Union[str, pathlib.Path]
+        """
+        logger.debug(f'{cfg=}')
+        self.path = pathlib.Path(cfg['path'])
+
+    def fini(self) -> None:
+        logger.debug(f'{self.path=}')
+
+    def create(self, cfg: dict[str, Any]) -> None:
+        self.path.mkdir(parents=True)
+
+    def destroy(self) -> None:
+        self.path.rmdir()
+
+    def get(self, bids: list[BlobId]) -> \
+            list[Optional[tuple[BlobInfo, BlobData]]]:
+        return [self._get_one(bid) for bid in bids]
+
+    def put(self, blobs: list[tuple[BlobId, BlobInfo, BlobData]]) -> \
+            list[BlobInfo]:
+        return [self._put_one(bid, info, data) for bid, info, data in blobs]
+
+    def head(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
+        return [self._head_one(bid) for bid in bids]
+
+    def catalog(self) -> list[BlobInfo]:
+        pass
+
+    def delete(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
+        return [self._delete_one(bid) for bid in bids]
+
+    def _get_one(self, bid: BlobId) -> Optional[tuple[BlobInfo, BlobData]]:
+        file_path = self.path / str(bid.bid)
+        if not file_path.exists() or not file_path.is_file():
+            return None
+        info = self._head_one(bid)
+        assert info is not None, (bid, info, file_path)
+        return (info, BlobData(data=None, path=file_path))
+
+    def _put_one(self, bid: BlobId, info: BlobInfo, data: BlobData) -> \
+            BlobInfo:
+        # currently info input parameter is not used here
+        # possible use cases: blob timestamp
+        info_new = self._head_one(bid)
+        assert (data.data is not None) + (data.path is not None) == 1, \
+            (bid, info, data)
+        file_path = self.path / str(bid.bid)
+        if data.path is not None:
+            shutil.copyfile(data.path, file_path)
+        elif data.data is not None:
+            with open(file_path, 'wb') as f:
+                f.write(data.data)
+        assert info_new is not None, (bid, info, data)
+        return info_new
+
+    def _head_one(self, bid: BlobId) -> Optional[BlobInfo]:
+        file_path = self.path / str(bid.bid)
+        if not file_path.exists():
+            return None
+        stat_result = file_path.stat()
+        return BlobInfo(size=stat_result.st_size, info={})
+
+    def _delete_one(self, bid: BlobId) -> Optional[BlobInfo]:
+        file_path = self.path / str(bid.bid)
+        if not file_path.exists():
+            return None
+        info = self._head_one(bid)
+        file_path.unlink()
+        return info
+
+
+class StorageDirCLI:
     pass
 
 

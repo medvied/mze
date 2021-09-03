@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''
+"""
 StorageServer API is based on AWS S3 API.
 
 https://docs.aws.amazon.com/AmazonS3/latest/API/API_Operations_Amazon_Simple_Storage_Service.html
@@ -161,29 +161,38 @@ TODO
 
 - async/await
 
-'''
+"""
 
 import uuid
+import pathlib
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, Any
 
 
+@dataclass
 class BlobId:
     bid: uuid.UUID
-    bversion: Optional[uuid.UUID]
 
 
+@dataclass
 class BlobInfo:
+    size: int
     info: dict[str, str]
 
 
+@dataclass
 class BlobData:
-    data: bytes
+    """
+    At least one of the fields should be something else than None.
+    """
+    data: Optional[bytes]
+    path: Optional[pathlib.Path]
 
 
 class Storage(ABC):
-    '''
+    """
     Subclasses of this class implement the abstract methods.
     In combination with StorageServer and StorageClient this allows to separate
     network transport from Storage implementation.
@@ -200,14 +209,42 @@ class Storage(ABC):
        allow to use StorageServerHTTP over the network.
     #. Make StorageClientDir(StorageClient, StorageDir). It would be a Storage
        Client which uses local directories and files to store the data.
-    '''
+    """
     @abstractmethod
-    def get(self, bids: list[BlobId]) -> list[Optional[BlobData]]:
+    def init(self, cfg: dict[str, Any]) -> None:
+        pass
+
+    @abstractmethod
+    def fini(self) -> None:
+        pass
+
+    @abstractmethod
+    def create(self, cfg: dict[str, Any]) -> None:
+        """
+        Implies init().
+        """
+        pass
+
+    @abstractmethod
+    def destroy(self) -> None:
+        """
+        Implies fini().
+        Assumption: there are no blobs left.
+        """
+        pass
+
+    @abstractmethod
+    def get(self, bids: list[BlobId]) -> \
+            list[Optional[tuple[BlobInfo, BlobData]]]:
+        """
+        Returns None if there is no such blob.
+        Returns filename or bytes in case if there is such blob.
+        """
         pass
 
     @abstractmethod
     def put(self, blobs: list[tuple[BlobId, BlobInfo, BlobData]]) -> \
-            list[Optional[BlobInfo]]:
+            list[BlobInfo]:
         pass
 
     @abstractmethod

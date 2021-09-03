@@ -1,5 +1,5 @@
-from mze.storage_server.dir import StorageServerDir
+from mze.storage_server.dir import StorageDir
 
 __all__ = [
-    'StorageServerDir',
+    'StorageDir',
 ]

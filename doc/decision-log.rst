@@ -1,3 +1,15 @@
+No versioning on C.storage level
+--------------------------------
+
+- pros
+
+  - easier C.storage implementation
+
+- cons
+
+  - more complex C.renderer implementation
+
+
 Use S3 protocol instead of custom S3-like protocol
 --------------------------------------------------
 
