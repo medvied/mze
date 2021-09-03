@@ -22,5 +22,5 @@ import mze
 
 
 class TestStorage(unittest.TestCase, mze.api.Storage):
-    def test_1(self):
+    def test_1(self) -> None:
         pass
