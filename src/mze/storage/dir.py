@@ -56,6 +56,7 @@ class StorageDir(Storage):
         logger.debug(f'{self.path=}')
 
     def create(self, cfg: dict[str, Any]) -> None:
+        self.init(cfg)
         self.path.mkdir(parents=True)
 
     def destroy(self) -> None:
