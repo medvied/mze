@@ -185,7 +185,7 @@ class BlobInfo:
 @dataclass
 class BlobData:
     """
-    At least one of the fields should be something else than None.
+    At least one of the fields should be something other than None.
     """
     data: Optional[bytes]
     path: Optional[pathlib.Path]
