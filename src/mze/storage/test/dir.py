@@ -51,4 +51,3 @@ class TestStorageDir(TestStorage, StorageDir):
 
     def post_fini(self, ii: int) -> None:
         self.assertTrue(self.ii_dir(ii).exists(), self.ii_dir(ii))
-
