@@ -17,6 +17,7 @@
 '''
 TODO use local mirror for the packages (dependencies)
 TODO remove all versions of package before upload
+     Reference: pypiserver/_app.py::remove_pkg()
 TODO unhardcode root user
 '''
 
