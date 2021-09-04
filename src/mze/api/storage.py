@@ -252,7 +252,7 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def catalog(self) -> list[BlobInfo]:
+    def catalog(self) -> list[tuple[BlobId, BlobInfo]]:
         pass
 
     @abstractmethod
