@@ -20,6 +20,9 @@ This storage server has a directory where all the data is located and it
 provides HTTP API to serve files from that directory.
 
 Storage format: just plain files in the dir with UUID as filename.
+
+TODO add error handling
+TODO make the implementation fully asynchronous with async/await
 """
 
 import os
