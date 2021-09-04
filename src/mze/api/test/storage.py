@@ -138,8 +138,31 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                 present[i] = True
 
     def check_data(self, supposedly_present: list[bool],
-                   test_ids: list[BlobId]) -> None:
-        pass
+                   test_ids: list[BlobId], test_data: list[bytes],
+                   one_by_one: bool) -> None:
+        N = len(test_ids)
+        if one_by_one:
+            infos_and_datas = [self.get([bid])[0] for bid in test_ids]
+        else:
+            infos_and_datas = self.get(test_ids)
+        self.assertEqual(len(infos_and_datas), N)
+        for i, info_and_data in enumerate(infos_and_datas):
+            if info_and_data is None:
+                self.assertFalse(supposedly_present[i])
+            else:
+                info, data = info_and_data
+                self.assertEqual(info.size, len(test_data[i]), f'{i=}')
+                self.assertEqual((data.data is not None) +
+                                 (data.path is not None), 1, f'{data}')
+                bdata: bytes
+                if data.data is not None:
+                    bdata = data.data
+                elif data.path is not None:
+                    with open(data.path, 'rb') as f:
+                        bdata = f.read()
+                else:
+                    bdata = b''
+                self.assertEqual(bdata, test_data[i])
 
     def test_simple(self) -> None:
         N: int = self.cfg_test()['simple_N']
@@ -174,7 +197,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                 continue
             self.check_presence(present, test_ids, test_data, i % (N//6) == 0)
             if i % (N//4) == 0 or i == N-1:
-                self.check_data(present, test_ids)
+                self.check_data(present, test_ids, test_data, i in [0, N-1])
 
         # test delete()
         for i in range(N):
