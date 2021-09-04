@@ -100,6 +100,16 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                 self.assertFalse(supposedly_present[i])
             else:
                 self.assertEqual(info.size, len(test_data[i]))
+        c = self.catalog()
+        c_bids = sorted([bid for bid, _ in c], key=lambda bid: bid.bid)
+        p_bids = sorted([bid for i, bid in enumerate(test_ids)
+                         if supposedly_present[i]], key=lambda bid: bid.bid)
+        self.assertEqual(c_bids, p_bids)
+        c_infos = {bid.bid: info for bid, info in c}
+        for i in range(N):
+            if supposedly_present[i]:
+                self.assertEqual(len(test_data[i]),
+                                 c_infos[test_ids[i].bid].size)
 
     def put_data(self, to_put: list[bool], present: list[bool],
                  test_ids: list[BlobId],
