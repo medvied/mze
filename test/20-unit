@@ -14,10 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 from plumbum import local, FG
 
 
 def main() -> None:
+    sys.tracebacklimit = 0
     with local.env(PYTHONPATH='src/'):
         local['python']['-m', 'unittest', '-v', 'mze.test'] & FG
 
