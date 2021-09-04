@@ -243,7 +243,7 @@ Design
 component         short  description
 ================  =====  ======================================================
 C.storage         C.st   storage client/server: blob & alike storage
-C.record-server   C.rs   record server: kv & complex data structures
+C.kvdb            C.db   key-value database
 C.view-server     C.vs   view server: transform data to a different form
 C.renderer        C.re   renderer: put the record together
 C.modifier        C.mo   modifier: a way to add/modify/remove/etc. a record
@@ -256,7 +256,8 @@ C.executor        C.ex   executor: automatic actions
 
 C.storage-server  C.sts  server part for C.st
 C.storage-client  C.stc  client part for C.st
-C.record-client   C.rcl  client part for C.rs
+C.kvdb-server     C.dbs  server part for C.db
+C.kvdb-client     C.dbc  client part for C.db
 ================  =====  ======================================================
 
 ================  ================  ===========================================
@@ -264,7 +265,7 @@ kind              component         description
 ================  ================  ===========================================
 C.storage-server  C.sts.git         git
 .                 C.sts.s3          AWS S3
-C.record-server
+C.kvdb
 C.view-server
 C.renderer        C.re.rst2html5
 .                 C.re.pandoc
@@ -400,7 +401,7 @@ role              name                 description
 C.storage-server  C.sts.dir            - a directory is served directly over
                                          HTTP
                                        - list of files is a special file
-C.record-server   C.rs.git-ssh         openssh + mounted git repo
+C.kvdb            C.dbs.git-ssh        openssh + mounted git repo
 C.view-server     C.vs.pdf-page        - input: pdf file + page #
                                        - output: image of the file
                                        - no persistence
@@ -423,7 +424,7 @@ Interaction diagram
 - ``C.cl.firefox`` -> ``C.pr.nginx`` -> (``C.pr.all-records``, ``C.re.search``)
 - ``C.pr.all-records`` -> ``C.ca.mem``
 - ``C.re.search`` -> (``C.ca.mem``, ``C.se.pdf-pages``)
-- ``C.ca.mem`` -> (``C.vs.pdf-page``, ``C.sts.dir``, ``C.rs.git-ssh``)
+- ``C.ca.mem`` -> (``C.vs.pdf-page``, ``C.sts.dir``, ``C.dbs.git-ssh``)
 - ``C.vs.pdf-page`` -> ``C.sts.dir``
 
 Implementation plan
@@ -434,7 +435,7 @@ Implementation plan
   ``C.se.pdf-page``.
 - ``C.sts.dir``: web server, serve files from a dir + special filename for file
   list
-- ``C.rs.git-ssh``: openssh + mounted git repo
+- ``C.dbs.git-ssh``: openssh + mounted git repo
 - ``C.vs.pdf-page``: web server, input: (pdf filename, page #), output: image
 - ``C.ca.mem``: input: web request, output: result from cache or querieng this
   data from ``C.sts.dir``, ``C.vs.pdf-page``

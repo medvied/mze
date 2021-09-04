@@ -19,7 +19,7 @@ Use S3 protocol instead of custom S3-like protocol
   - R.uuid
   - R.record.uri
   - C.storage-server
-  - C.record-server
+  - C.kvdb
 
 - pros
 
