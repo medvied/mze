@@ -88,7 +88,8 @@ class StorageDir(Storage):
         return [self._head_one(bid) for bid in bids]
 
     def catalog(self) -> list[BlobInfo]:
-        pass
+        return [BlobInfo(size=f.stat().st_size, info={})
+                for f in self.path.iterdir()]
 
     def delete(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
         return [self._delete_one(bid) for bid in bids]
