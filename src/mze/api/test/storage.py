@@ -87,11 +87,11 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
         self.post_destroy(0)
 
     def check_presence(self, supposedly_present: list[bool],
-                       test_ids: list[uuid.UUID], one_by_one: bool) -> None:
+                       test_ids: list[BlobId], one_by_one: bool) -> None:
         pass
 
     def put_data(self, to_put: list[bool], present: list[bool],
-                 test_ids: list[uuid.UUID],
+                 test_ids: list[BlobId],
                  test_data: list[bytes], tmpdir: pathlib.Path) -> None:
         N = len(present)
         for i in range(N):
@@ -105,7 +105,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                     blob_data = BlobData(data=None, path=filename)
                 else:
                     blob_data = BlobData(data=test_data[i], path=None)
-                blobs.append((BlobId(bid=test_ids[i]),
+                blobs.append((test_ids[i],
                               BlobInfo(size=len(test_data[i]), info={}),
                               blob_data))
                 sizes.append(len(test_data[i]))
@@ -117,7 +117,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                 present[i] = True
 
     def check_data(self, supposedly_present: list[bool],
-                   test_ids: list[uuid.UUID]) -> None:
+                   test_ids: list[BlobId]) -> None:
         pass
 
     def test_simple(self) -> None:
@@ -127,7 +127,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
         # prepare test data and files
         test_data = [random.randbytes(random.randrange(blob_size_max + 1))
                      for i in range(N)]
-        test_ids = [uuid.uuid4() for i in range(N)]
+        test_ids = [BlobId(bid=uuid.uuid4()) for i in range(N)]
         present = [False for i in range(N)]
         tmpdir = pathlib.Path(tempfile.mkdtemp())
         for i in range(0, N, 2):
@@ -157,7 +157,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
 
         # test delete()
         for i in range(N):
-            info = self.delete([BlobId(bid=test_ids[i])])
+            info = self.delete([test_ids[i]])
             present[i] = False
             self.assertEqual(len(info), 1)
             self.assertIsNot(info[0], None)
