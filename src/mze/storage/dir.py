@@ -42,6 +42,17 @@ logger = logging.getLogger(__name__)
 
 
 class StorageDir(Storage):
+    """
+    API
+
+    - init()/fini()
+    - create()/destroy()
+    - get()
+    - put()
+    - head()
+    - catalog()
+    - delete()
+    """
     path: pathlib.Path
 
     def init(self, cfg: dict[str, Any]) -> None:
@@ -92,6 +103,7 @@ class StorageDir(Storage):
         # currently info input parameter is not used here
         # possible use cases: blob timestamp
         info_new = self._head_one(bid)
+        assert info_new is None, info_new
         assert (data.data is not None) + (data.path is not None) == 1, \
             (bid, info, data)
         file_path = self.path / str(bid.bid)
@@ -100,6 +112,7 @@ class StorageDir(Storage):
         elif data.data is not None:
             with open(file_path, 'wb') as f:
                 f.write(data.data)
+        info_new = self._head_one(bid)
         assert info_new is not None, (bid, info, data)
         return info_new
 

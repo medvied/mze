@@ -26,6 +26,12 @@ from mze.api.test import TestStorage
 class TestStorageDir(TestStorage, StorageDir):
     temp_dir: pathlib.Path
 
+    def cfg_test(self) -> dict[str, Any]:
+        return {
+            'simple_N': 100,
+            'simple_blob_size_max': 0x100,
+        }
+
     def ii_dir(self, ii: int) -> pathlib.Path:
         if not hasattr(self, 'temp_dir'):
             self.temp_dir = pathlib.Path(tempfile.mkdtemp())
