@@ -14,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+TODO random test: make a random deterministic (defined by seed) sequence of
+put()s and delete()s and run it. Check catalog(), get() and head() after each
+element of the sequence.
+"""
+
 
 import uuid
 import random
