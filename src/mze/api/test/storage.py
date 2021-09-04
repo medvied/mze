@@ -87,13 +87,24 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
         self.post_destroy(0)
 
     def check_presence(self, supposedly_present: list[bool],
-                       test_ids: list[BlobId], one_by_one: bool) -> None:
-        pass
+                       test_ids: list[BlobId], test_data: list[bytes],
+                       one_by_one: bool) -> None:
+        N = len(test_ids)
+        if one_by_one:
+            infos = [self.head([test_ids[i]])[0] for i in range(N)]
+        else:
+            infos = self.head(test_ids)
+        self.assertEqual(len(infos), N)
+        for i, info in enumerate(infos):
+            if info is None:
+                self.assertFalse(supposedly_present[i])
+            else:
+                self.assertEqual(info.size, len(test_data[i]))
 
     def put_data(self, to_put: list[bool], present: list[bool],
                  test_ids: list[BlobId],
                  test_data: list[bytes], tmpdir: pathlib.Path) -> None:
-        N = len(present)
+        N = len(test_ids)
         for i in range(N):
             self.assertFalse(to_put[i] and present[i], f'{i=}')
         blobs = []
@@ -142,7 +153,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
         # the rest are put all at once
         for i in range(N):
             if i == 0:
-                self.check_presence(present, test_ids, False)
+                self.check_presence(present, test_ids, test_data, False)
             if i == N-1:
                 self.put_data([j >= N//5 * 4 for j in range(N)],
                               present, test_ids, test_data, tmpdir)
@@ -151,7 +162,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                               present, test_ids, test_data, tmpdir)
             else:
                 continue
-            self.check_presence(present, test_ids, i % (N//6) == 0)
+            self.check_presence(present, test_ids, test_data, i % (N//6) == 0)
             if i % (N//4) == 0 or i == N-1:
                 self.check_data(present, test_ids)
 
@@ -163,7 +174,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
             self.assertIsNot(info[0], None)
             assert info[0] is not None  # to make mypy happy
             self.assertEqual(info[0].size, len(test_data[i]))
-            self.check_presence(present, test_ids, i % (N//7) == 0)
+            self.check_presence(present, test_ids, test_data, i % (N//7) == 0)
 
         self.destroy()
         self.post_destroy(0)
