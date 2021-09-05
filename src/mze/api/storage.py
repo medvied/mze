@@ -234,6 +234,10 @@ class Storage(ABC):
         pass
 
     @abstractmethod
+    def fsck(self) -> None:
+        pass
+
+    @abstractmethod
     def get(self, bids: list[BlobId]) -> \
             list[Optional[tuple[BlobInfo, BlobData]]]:
         """

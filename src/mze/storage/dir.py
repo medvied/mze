@@ -76,6 +76,9 @@ class StorageDir(Storage):
     def destroy(self) -> None:
         self.path.rmdir()
 
+    def fsck(self) -> None:
+        pass
+
     def get(self, bids: list[BlobId]) -> \
             list[Optional[tuple[BlobInfo, BlobData]]]:
         return [self._get_one(bid) for bid in bids]
