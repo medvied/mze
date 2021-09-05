@@ -149,16 +149,14 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                    one_by_one: bool) -> None:
         N = len(test_ids)
         if one_by_one:
-            infos_and_datas = [self.get([bid])[0] for bid in test_ids]
+            datas = [self.get([bid])[0] for bid in test_ids]
         else:
-            infos_and_datas = self.get(test_ids)
-        self.assertEqual(len(infos_and_datas), N)
-        for i, info_and_data in enumerate(infos_and_datas):
-            if info_and_data is None:
+            datas = self.get(test_ids)
+        self.assertEqual(len(datas), N)
+        for i, data in enumerate(datas):
+            if data is None:
                 self.assertFalse(supposedly_present[i])
             else:
-                info, data = info_and_data
-                self.assertEqual(info.size, len(test_data[i]), f'{i=}')
                 self.assertEqual((data.data is not None) +
                                  (data.path is not None), 1, f'{data}')
                 bdata: bytes

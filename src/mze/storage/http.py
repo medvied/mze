@@ -71,11 +71,10 @@ class StorageServerHTTP(mze.api.StorageServer, mze.api.ServiceHTTP):
                 bids.append(BlobId(bid=uuid.UUID(single_id)))
         if op == 'get':
             assert len(bids) == 1, (bids)
-            infos_datas = self.get(bids)
-            assert len(infos_datas) == 1, (infos_datas)
-            info_data = infos_datas[0]
-            if info_data is not None:
-                info, data = info_data
+            datas = self.get(bids)
+            assert len(datas) == 1, datas
+            data = datas[0]
+            if data is not None:
                 if data.path is not None:
                     return web.FileResponse(path=data.path)
                 if data.data is not None:

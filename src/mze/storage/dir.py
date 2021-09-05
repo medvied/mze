@@ -80,8 +80,7 @@ class StorageDir(Storage):
     def fsck(self) -> None:
         pass
 
-    def get(self, bids: list[BlobId]) -> \
-            list[Optional[tuple[BlobInfo, BlobData]]]:
+    def get(self, bids: Sequence[BlobId]) -> list[Optional[BlobData]]:
         return [self._get_one(bid) for bid in bids]
 
     def put(self, blobs: Sequence[tuple[Optional[BlobId], BlobData]]) -> \
@@ -99,13 +98,11 @@ class StorageDir(Storage):
     def delete(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
         return [self._delete_one(bid) for bid in bids]
 
-    def _get_one(self, bid: BlobId) -> Optional[tuple[BlobInfo, BlobData]]:
+    def _get_one(self, bid: BlobId) -> Optional[BlobData]:
         file_path = self.path / str(bid.bid)
         if not file_path.exists() or not file_path.is_file():
             return None
-        info = self._head_one(bid)
-        assert info is not None, (bid, info, file_path)
-        return (info, BlobData(data=None, path=file_path))
+        return BlobData(data=None, path=file_path)
 
     def _put_one(self, bid: Optional[BlobId], data: BlobData) -> \
             tuple[BlobId, BlobInfo]:

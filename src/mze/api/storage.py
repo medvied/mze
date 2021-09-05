@@ -239,8 +239,7 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def get(self, bids: list[BlobId]) -> \
-            list[Optional[tuple[BlobInfo, BlobData]]]:
+    def get(self, bids: Sequence[BlobId]) -> list[Optional[BlobData]]:
         """
         Returns None if there is no such blob.
         Returns filename or bytes in case if there is such blob.
