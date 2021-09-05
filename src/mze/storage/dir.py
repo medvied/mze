@@ -92,7 +92,7 @@ class StorageDir(Storage):
 
     def catalog(self) -> list[tuple[BlobId, BlobInfo]]:
         return [(BlobId(bid=uuid.UUID(f.name)),
-                 BlobInfo(size=f.stat().st_size, info={}))
+                 BlobInfo(size=f.stat().st_size))
                 for f in self.path.iterdir()]
 
     def delete(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
@@ -129,7 +129,7 @@ class StorageDir(Storage):
         if not file_path.exists():
             return None
         stat_result = file_path.stat()
-        return BlobInfo(size=stat_result.st_size, info={})
+        return BlobInfo(size=stat_result.st_size)
 
     def _delete_one(self, bid: BlobId) -> Optional[BlobInfo]:
         file_path = self.path / str(bid.bid)

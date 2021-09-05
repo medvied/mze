@@ -133,7 +133,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                 else:
                     blob_data = BlobData(data=test_data[i], path=None)
                 blobs.append((test_ids[i],
-                              BlobInfo(size=len(test_data[i]), info={}),
+                              BlobInfo(size=len(test_data[i])),
                               blob_data))
                 sizes.append(len(test_data[i]))
         infos = self.put(blobs=blobs)

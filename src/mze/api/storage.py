@@ -179,7 +179,6 @@ class BlobId:
 @dataclass
 class BlobInfo:
     size: int
-    info: dict[str, str]
 
 
 @dataclass
