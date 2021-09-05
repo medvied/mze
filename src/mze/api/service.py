@@ -29,7 +29,7 @@ class ServiceId:
 
 
 class Service(ABC):
-    sid: ServiceId
+    instance_id: ServiceId
 
     def __init__(self, *,
                  cfg: dict[str, Any],
@@ -37,10 +37,10 @@ class Service(ABC):
                  environ: Optional[dict[str, str]] = None) -> None:
         if environ is not None:
             if 'MZE_INSTANCE_ID' in environ:
-                self.sid.sid = uuid.UUID(environ['MZE_INSTANCE_ID'])
+                self.instance_id.sid = uuid.UUID(environ['MZE_INSTANCE_ID'])
         # TODO handle --instance-id parameter from argv
         if 'MZE_INSTANCE_ID' in cfg:
-            self.sid.sid = uuid.UUID(cfg['MZE_INSTANCE_ID'])
+            self.instance_id.sid = uuid.UUID(cfg['MZE_INSTANCE_ID'])
 
     @abstractmethod
     def run(self) -> None:
