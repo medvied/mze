@@ -41,6 +41,9 @@ class ServiceHTTP(Service):
         main_app.add_subapp(self.web_location, self.app())
         web.run_app(main_app, port=80)
 
+    # TODO rename app() -> application()
+    # This would allow to create shorter variables everywhere a web.Application
+    # is needed
     def app(self) -> web.Application:
         application = web.Application()
         application['MZE_INSTANCE_ID'] = self.instance_id
