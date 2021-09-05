@@ -104,7 +104,23 @@ class StorageServerHTTP(mze.api.StorageServer, mze.api.ServiceHTTP):
 
     async def handler_management(self, request: web.Request, op: str) -> \
             web.StreamResponse:
-        return web.Response(text='Hi')
+        cfg: dict[str, Any] = {}
+        if op in ['init', 'create']:
+            assert request.can_read_body
+            body = await request.json()
+            assert body is dict, body
+            for k, v in body:
+                assert k is str, (k, body)
+                cfg[k] = v
+            (self.init if op == 'init' else self.create)(cfg)
+        else:
+            {
+                'fini': self.fini,
+                'destroy': self.destroy,
+                'fsck': self.fsck,
+            }[op]()
+        # TODO error handling
+        return web.HTTPOk()
 
     async def handler(self, request: web.Request) -> web.StreamResponse:
         application = request.app
