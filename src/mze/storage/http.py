@@ -31,9 +31,11 @@ endpoint  input     output      quantity      HTTP
 /fsck     -         ok/fail                   POST
 """
 
+import json
 import uuid
 import logging
 
+from collections.abc import Sequence
 from typing import Optional, Any
 from aiohttp import web
 
@@ -83,9 +85,22 @@ class StorageServerHTTP(mze.api.StorageServer, mze.api.ServiceHTTP):
             else:
                 return web.HTTPNotFound()
         else:
-            id_info: list[Optional[tuple[BlobInfo, BlobData]]] = []
-            print(id_info)  # XXX placeholder
-        return web.Response(text='Hi')
+            id_info: Sequence[tuple[BlobId, Optional[BlobInfo]]] = []
+            if op == 'put':
+                assert len(bids) in [0, 1], (bids)
+                bid = None if len(bids) == 0 else bids[0]
+                id_info = self.put(blobs=[(
+                    bid, BlobData(data=await request.read(), path=None))])
+                assert len(id_info) == 1, id_info
+            elif op == 'catalog':
+                id_info = self.catalog()
+            elif op in ['head', 'delete']:
+                infos = self.head(bids) if op == 'head' else self.delete(bids)
+                # TODO use strict for zip in Python 3.10
+                id_info = [(bid, info) for bid, info in zip(bids, infos)]
+            else:
+                return web.HTTPNotImplemented()
+            return web.Response(body=json.dumps(id_info))
 
     async def handler_management(self, request: web.Request, op: str) -> \
             web.StreamResponse:
