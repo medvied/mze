@@ -87,7 +87,7 @@ class StorageDir(Storage):
             list[tuple[BlobId, BlobInfo]]:
         return [self._put_one(bid, data) for bid, data in blobs]
 
-    def head(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
+    def head(self, bids: Sequence[BlobId]) -> list[Optional[BlobInfo]]:
         return [self._head_one(bid) for bid in bids]
 
     def catalog(self) -> list[tuple[BlobId, BlobInfo]]:
@@ -95,7 +95,7 @@ class StorageDir(Storage):
                  BlobInfo(size=f.stat().st_size))
                 for f in self.path.iterdir()]
 
-    def delete(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
+    def delete(self, bids: Sequence[BlobId]) -> list[Optional[BlobInfo]]:
         return [self._delete_one(bid) for bid in bids]
 
     def _get_one(self, bid: BlobId) -> Optional[BlobData]:

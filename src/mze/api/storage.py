@@ -252,7 +252,7 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def head(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
+    def head(self, bids: Sequence[BlobId]) -> list[Optional[BlobInfo]]:
         pass
 
     @abstractmethod
@@ -260,7 +260,7 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def delete(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
+    def delete(self, bids: Sequence[BlobId]) -> list[Optional[BlobInfo]]:
         pass
 
 
