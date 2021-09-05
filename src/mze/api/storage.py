@@ -186,6 +186,7 @@ class BlobInfo:
 class BlobData:
     """
     At least one of the fields should be something other than None.
+    TODO add invariant() to check that exactly one of files is set
     """
     data: Optional[bytes]
     path: Optional[pathlib.Path]
