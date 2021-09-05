@@ -17,7 +17,8 @@
 
 import uuid
 
-from abc import ABC
+from abc import ABC, abstractmethod
+from typing import Optional, Any
 from dataclasses import dataclass
 
 
@@ -29,3 +30,18 @@ class ServiceId:
 
 class Service(ABC):
     sid: ServiceId
+
+    def __init__(self, *,
+                 cfg: dict[str, Any],
+                 argv: Optional[list[str]] = None,
+                 environ: Optional[dict[str, str]] = None) -> None:
+        if environ is not None:
+            if 'MZE_INSTANCE_ID' in environ:
+                self.sid.sid = uuid.UUID(environ['MZE_INSTANCE_ID'])
+        # TODO handle --instance-id parameter from argv
+        if 'MZE_INSTANCE_ID' in cfg:
+            self.sid.sid = uuid.UUID(cfg['MZE_INSTANCE_ID'])
+
+    @abstractmethod
+    def run(self) -> None:
+        pass
