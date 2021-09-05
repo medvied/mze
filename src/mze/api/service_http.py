@@ -15,12 +15,8 @@
 # limitations under the License.
 
 
-import mze.api
+from .service import Service
 
 
-class StorageServerHTTP(mze.api.StorageServer, mze.api.ServiceHTTP):
-    pass
-
-
-class StorageClientHTTP(mze.api.StorageClient):
+class ServiceHTTP(Service):
     pass

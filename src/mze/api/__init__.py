@@ -22,12 +22,22 @@ from .storage import Storage
 from .storage import StorageServer
 from .storage import StorageClient
 
+from .service import ServiceId
+from .service import Service
+
+from .service_http import ServiceHTTP
+
+
 __all__ = [
     'BlobId',
     'BlobInfo',
     'BlobData',
-
     'Storage',
     'StorageServer',
     'StorageClient',
+
+    'ServiceId',
+    'Service',
+
+    'ServiceHTTP',
 ]
