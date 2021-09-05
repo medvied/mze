@@ -17,6 +17,31 @@
 
 from .service import Service
 
+from typing import Optional, Any
+from abc import abstractmethod
+from aiohttp import web
+
 
 class ServiceHTTP(Service):
-    pass
+    web_location: str
+
+    def __init__(self, *,
+                 cfg: dict[str, Any],
+                 argv: Optional[list[str]] = None,
+                 environ: Optional[dict[str, str]] = None) -> None:
+        super().__init__(cfg=cfg, argv=argv, environ=environ)
+        if environ is not None:
+            if 'MZE_WEB_LOCATION' in environ:
+                self.web_location = environ['MZE_WEB_LOCATION']
+        # TODO handle --web-location parameter from argv
+        if 'MZE_WEB_LOCATION' in cfg:
+            self.web_location = cfg['MZE_WEB_LOCATION']
+
+    def run(self) -> None:
+        main_app = web.Application()
+        main_app.add_subapp(self.web_location, self.app())
+        web.run_app(main_app, port=80)
+
+    @abstractmethod
+    def app(self) -> web.Application:
+        pass
