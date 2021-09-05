@@ -17,7 +17,10 @@
 # TODO add more distributions
 FROM python:3.9 AS common
 
-RUN pip install aiohttp[speedups] aiofiles types-aiofiles plumbum
+RUN pip install aiohttp[speedups] \
+	    aiofiles types-aiofiles \
+	    requests types-requests \
+	    plumbum
 
 RUN apt update
 

@@ -34,6 +34,7 @@ endpoint  input     output      quantity      HTTP
 import json
 import uuid
 import logging
+import requests
 
 from collections.abc import Sequence
 from typing import Optional, Any
@@ -144,4 +145,70 @@ class StorageServerHTTP(mze.api.StorageServer, mze.api.ServiceHTTP):
 
 
 class StorageClientHTTP(mze.api.StorageClient):
-    pass
+    server_url: str
+
+    def init(self, cfg: dict[str, Any]) -> None:
+        pass
+
+    def fini(self) -> None:
+        pass
+
+    def create(self, cfg: dict[str, Any]) -> None:
+        pass
+
+    def destroy(self) -> None:
+        pass
+
+    def fsck(self) -> None:
+        pass
+
+    def get(self, bids: Sequence[BlobId]) -> list[Optional[BlobData]]:
+        datas: list[Optional[BlobData]] = []
+        for bid in bids:
+            r = requests.get(f'{self.server_url}/get',
+                             params={'id': str(bid.bid)})
+            assert r.status_code in [200, 404]
+            if r.status_code == 200:
+                datas.append(BlobData(data=r.content, path=None))
+            else:
+                datas.append(None)
+        return datas
+
+    def put(self, blobs: Sequence[tuple[Optional[BlobId], BlobData]]) -> \
+            list[tuple[BlobId, BlobInfo]]:
+        ids_infos: list[tuple[BlobId, BlobInfo]] = []
+        for bid, data in blobs:
+            if data.path is not None:
+                with open(data.path, 'rb') as f:
+                    binary_data = f.read()
+            elif data.data is not None:
+                binary_data = data.data
+            params = {} if bid is None else {'id': str(bid.bid)}
+            r = requests.put(f'{self.server_url}/put',
+                             data=binary_data, params=params)
+            # TODO validate before returning to the user
+            ids_infos.append(r.json()[0])
+        return ids_infos
+
+    def head_or_delete(self, op: str, bids: Sequence[BlobId]) -> \
+            list[Optional[BlobInfo]]:
+        url = f'{self.server_url}/{op}'
+        ids = [str(bid.bid) for bid in bids]
+        if op == 'head':
+            r = requests.get(url, data=ids)
+        else:
+            r = requests.delete(url, data=ids)
+        ids_infos = r.json()
+        # TODO validate before returning
+        return [info for _, info in ids_infos]
+
+    def head(self, bids: Sequence[BlobId]) -> list[Optional[BlobInfo]]:
+        return self.head_or_delete('head', bids)
+
+    def catalog(self) -> list[tuple[BlobId, BlobInfo]]:
+        r = requests.get(f'{self.server_url}/catalog')
+        # TODO validate
+        return [(bid, info) for bid, info in r.json()]
+
+    def delete(self, bids: Sequence[BlobId]) -> list[Optional[BlobInfo]]:
+        return self.head_or_delete('delete', bids)
