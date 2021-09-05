@@ -15,6 +15,7 @@
 # limitations under the License.
 
 """
+TODO test put() with BlobId=None
 TODO random test: make a random deterministic (defined by seed) sequence of
 put()s and delete()s and run it. Check catalog(), get() and head() after each
 element of the sequence.
@@ -31,7 +32,7 @@ from abc import abstractmethod
 from typing import Any
 
 import mze.api
-from mze.api.storage import BlobId, BlobInfo, BlobData
+from mze.api.storage import BlobId, BlobData
 
 
 class TestStorage(unittest.TestCase, mze.api.Storage):
@@ -132,13 +133,13 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                     blob_data = BlobData(data=None, path=filename)
                 else:
                     blob_data = BlobData(data=test_data[i], path=None)
-                blobs.append((test_ids[i],
-                              BlobInfo(size=len(test_data[i])),
-                              blob_data))
+                blobs.append((test_ids[i], blob_data))
                 sizes.append(len(test_data[i]))
-        infos = self.put(blobs=blobs)
+        ids_infos = self.put(blobs=blobs)
         for j in range(len(blobs)):
-            self.assertEqual(infos[j].size, sizes[j])
+            bid, info = ids_infos[j]
+            self.assertEqual(bid.bid, blobs[j][0].bid)
+            self.assertEqual(info.size, sizes[j])
         for i in range(N):
             if to_put[i]:
                 present[i] = True

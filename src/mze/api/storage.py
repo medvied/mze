@@ -166,6 +166,7 @@ TODO
 import uuid
 import pathlib
 
+from collections.abc import Sequence
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Any
@@ -246,8 +247,8 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def put(self, blobs: list[tuple[BlobId, BlobInfo, BlobData]]) -> \
-            list[BlobInfo]:
+    def put(self, blobs: Sequence[tuple[Optional[BlobId], BlobData]]) -> \
+            list[tuple[BlobId, BlobInfo]]:
         pass
 
     @abstractmethod

@@ -33,6 +33,7 @@ import logging
 import pathlib
 import aiofiles
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from aiohttp import web
@@ -83,9 +84,9 @@ class StorageDir(Storage):
             list[Optional[tuple[BlobInfo, BlobData]]]:
         return [self._get_one(bid) for bid in bids]
 
-    def put(self, blobs: list[tuple[BlobId, BlobInfo, BlobData]]) -> \
-            list[BlobInfo]:
-        return [self._put_one(bid, info, data) for bid, info, data in blobs]
+    def put(self, blobs: Sequence[tuple[Optional[BlobId], BlobData]]) -> \
+            list[tuple[BlobId, BlobInfo]]:
+        return [self._put_one(bid, data) for bid, data in blobs]
 
     def head(self, bids: list[BlobId]) -> list[Optional[BlobInfo]]:
         return [self._head_one(bid) for bid in bids]
@@ -106,23 +107,23 @@ class StorageDir(Storage):
         assert info is not None, (bid, info, file_path)
         return (info, BlobData(data=None, path=file_path))
 
-    def _put_one(self, bid: BlobId, info: BlobInfo, data: BlobData) -> \
-            BlobInfo:
-        # currently info input parameter is not used here
-        # possible use cases: blob timestamp
-        info_new = self._head_one(bid)
-        assert info_new is None, info_new
+    def _put_one(self, bid: Optional[BlobId], data: BlobData) -> \
+            tuple[BlobId, BlobInfo]:
+        if bid is None:
+            bid = BlobId(bid=uuid.uuid4())
+        info = self._head_one(bid)
+        assert info is None, info
         assert (data.data is not None) + (data.path is not None) == 1, \
-            (bid, info, data)
+            (bid, data)
         file_path = self.path / str(bid.bid)
         if data.path is not None:
             shutil.copyfile(data.path, file_path)
         elif data.data is not None:
             with open(file_path, 'wb') as f:
                 f.write(data.data)
-        info_new = self._head_one(bid)
-        assert info_new is not None, (bid, info, data)
-        return info_new
+        info = self._head_one(bid)
+        assert info is not None, (bid, info, data)
+        return (bid, info)
 
     def _head_one(self, bid: BlobId) -> Optional[BlobInfo]:
         file_path = self.path / str(bid.bid)
