@@ -147,20 +147,26 @@ class StorageServerHTTP(mze.api.StorageServer, mze.api.ServiceHTTP):
 class StorageClientHTTP(mze.api.StorageClient):
     server_url: str
 
+    def init_or_create(self, cfg: dict[str, Any], op: str) -> None:
+        requests.get(f'{self.server_url}/{op}', data=cfg)
+
+    def fini_or_destroy_or_fsck(self, op: str) -> None:
+        requests.get(f'{self.server_url}/{op}')
+
     def init(self, cfg: dict[str, Any]) -> None:
-        pass
+        self.init_or_create(cfg, 'init')
 
     def fini(self) -> None:
-        pass
+        self.fini_or_destroy_or_fsck('fini')
 
     def create(self, cfg: dict[str, Any]) -> None:
-        pass
+        self.init_or_create(cfg, 'create')
 
     def destroy(self) -> None:
-        pass
+        self.fini_or_destroy_or_fsck('destroy')
 
     def fsck(self) -> None:
-        pass
+        self.fini_or_destroy_or_fsck('fsck')
 
     def get(self, bids: Sequence[BlobId]) -> list[Optional[BlobData]]:
         datas: list[Optional[BlobData]] = []
