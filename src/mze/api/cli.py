@@ -21,24 +21,25 @@ from abc import ABC, abstractmethod
 class CLI(ABC):
     """
     Intended use case:
+
     - call parse_argv_environ_all(os.argv, os.environ) first. It would execute
       parse_argv_environ(os.argv, os.environ) for all predecessors;
     - call run().
     """
     @abstractmethod
-    def parse_argv_environ(self, argv: list[str],
-                           environ: dict[str, str]) -> None:
+    def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
+                               environ: dict[str, str]) -> None:
         pass
 
     @abstractmethod
     def run(self) -> None:
         pass
 
-    def parse_argv_environ_all(self, argv: list[str],
-                               environ: dict[str, str]) -> None:
+    def parse_cfg_argv_environ_all(self, cfg: dict[str, str], argv: list[str],
+                                   environ: dict[str, str]) -> None:
         for c in self.__class__.mro()[::-1]:
             if 'parse_argv_environ' in vars(c):
-                c.parse_argv_environ(self, argv, environ)  # type: ignore
+                c.parse_argv_environ(self, cfg, argv, environ)  # type: ignore
                 # mypy complains about the previous line:
                 # error: "type" has no attribute "parse_argv_environ"
                 # [attr-defined]
