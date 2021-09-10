@@ -41,7 +41,7 @@ from typing import Optional, Any
 from aiohttp import web
 
 from mze.api import StorageServer, ServiceHTTPServer
-from mze.api import StorageClient
+from mze.api import StorageClient, ServiceHTTPClient
 from mze.api import BlobId, BlobInfo, BlobData
 
 
@@ -144,7 +144,7 @@ class StorageServerHTTP(StorageServer, ServiceHTTPServer):
         return app
 
 
-class StorageClientHTTP(StorageClient):
+class StorageClientHTTP(StorageClient, ServiceHTTPClient):
     def init_or_create(self, cfg: dict[str, Any], op: str) -> None:
         requests.get(f'{self.server_url}/{op}', data=cfg)
 
