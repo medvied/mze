@@ -25,19 +25,13 @@ TODO add error handling
 TODO make the implementation fully asynchronous with async/await
 """
 
-import os
-import sys
 import uuid
 import shutil
 import logging
 import pathlib
-import aiofiles
 
 from collections.abc import Sequence
-from dataclasses import dataclass
-from pathlib import Path
-from aiohttp import web
-from typing import Any, Callable, Awaitable, Optional
+from typing import Any, Optional
 
 from mze.api.storage import BlobId, BlobInfo, BlobData, StorageClient
 
