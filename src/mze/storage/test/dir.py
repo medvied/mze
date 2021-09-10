@@ -27,8 +27,11 @@ from mze.api.test import TestStorageClient
 class TestStorageClientDir(TestStorageClient):
     temp_dir: pathlib.Path
 
-    def init_object(self) -> StorageClient:
-        return StorageClientDir()
+    def init_object(self, ii: int) -> StorageClient:
+        storage_client: StorageClient = StorageClientDir()
+        storage_client.parse_cfg_argv_environ_all(
+            {'MZE_SERVER_URL': f'file:{self.ii_dir(ii)}'}, [], {})
+        return storage_client
 
     def cfg_test(self) -> dict[str, Any]:
         return {
@@ -45,10 +48,10 @@ class TestStorageClientDir(TestStorageClient):
         return 0x1000000
 
     def cfg_create(self, ii: int) -> dict[str, Any]:
-        return self.cfg_init(ii)
+        return {}
 
     def cfg_init(self, ii: int) -> dict[str, Any]:
-        return {'path': self.ii_dir(ii)}
+        return {}
 
     def pre_create(self, ii: int) -> None:
         self.assertFalse(self.ii_dir(ii).exists(), self.ii_dir(ii))

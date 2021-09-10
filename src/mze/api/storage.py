@@ -163,6 +163,7 @@ TODO
 
 """
 
+import json
 import uuid
 import pathlib
 
@@ -170,6 +171,9 @@ from collections.abc import Sequence
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Any
+
+from .cli import CLI
+from .service import ServiceServer, ServiceClient
 
 
 @dataclass
@@ -209,6 +213,7 @@ class Storage(ABC):
        of Storage by making requests to StorageServerHTTP over HTTP. This would
        allow to use StorageServerHTTP over the network.
     """
+
     @abstractmethod
     def init(self, cfg: dict[str, Any]) -> None:
         pass
@@ -262,15 +267,76 @@ class Storage(ABC):
         pass
 
 
-class StorageServer(Storage):
-    '''
+class StorageServer(Storage, ServiceServer, CLI):
+    """
     Subclasses of this class call abstract methods of Storage.
-    '''
+    """
     pass
 
 
-class StorageClient(Storage):
-    '''
+class StorageClient(Storage, ServiceClient, CLI):
+    cmds: str
+    blob_id: Optional[uuid.UUID]
+    filename_in: str
+    filename_out: str
+    init_cfg: dict[str, Any]
+    create_cfg: dict[str, Any]
+    """
     Subclasses of this class implement abstract methods of Storage.
-    '''
-    pass
+    """
+    def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
+                               environ: dict[str, str]) -> None:
+        self.cmds = self.parse_cfg_argv_environ_single(
+            cfg, argv, environ,
+            key='MZE_CMD',
+            argv_flags=['cmd'],
+            argv_kwargs={'nargs': '*'})  # make it optional
+        self.blob_id = self.parse_cfg_argv_environ_single(
+            cfg, argv, environ,
+            key='MZE_BLOB_ID',
+            argv_flags=['--blob-id'],
+            argv_kwargs={'type': uuid.UUID, 'default': None})
+        self.filename_in = self.parse_cfg_argv_environ_single(
+            cfg, argv, environ,
+            key='MZE_FILENAME_IN',
+            argv_flags=['--filename-in'],
+            argv_kwargs={'type': str, 'default': '-'})
+        self.filename_out = self.parse_cfg_argv_environ_single(
+            cfg, argv, environ,
+            key='MZE_FILENAME_OUT',
+            argv_flags=['--filename-out'],
+            argv_kwargs={'type': str, 'default': '-'})
+        self.init_cfg = self.parse_cfg_argv_environ_single(
+            cfg, argv, environ,
+            key='MZE_INIT_CFG',
+            argv_flags=['--init-cfg'],
+            argv_kwargs={'type': json.loads, 'default': {}})
+        self.create_cfg = self.parse_cfg_argv_environ_single(
+            cfg, argv, environ,
+            key='MZE_CREATE_CFG',
+            argv_flags=['--create-cfg'],
+            argv_kwargs={'type': json.loads, 'default': {}})
+
+    def run(self) -> None:
+        # TODO better error message
+        assert self.server_url is not None, self.cmds
+        for cmd in self.cmds:
+            # TODO better error message
+            assert cmd in ['init', 'fini', 'create', 'destroy', 'fsck',
+                           'get', 'put', 'head', 'catalog', 'delete'], \
+                (cmd, self.cmds)
+        # TODO use Structural Pattern Matching in Python 3.10
+        for cmd in self.cmds:
+            if cmd == 'init':
+                self.init(self.init_cfg)
+            elif cmd == 'fini':
+                self.fini()
+            elif cmd == 'create':
+                self.create(self.create_cfg)
+            elif cmd == 'destroy':
+                self.destroy()
+            elif cmd == 'fsck':
+                self.fsck()
+            else:
+                print(f'{self.cmds=} {cmd=}')
+                raise NotImplementedError

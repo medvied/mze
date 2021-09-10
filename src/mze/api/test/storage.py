@@ -40,7 +40,7 @@ class TestStorageClient(unittest.TestCase):
     storage_client: StorageClient
 
     @abstractmethod
-    def init_object(self) -> StorageClient:
+    def init_object(self, ii: int) -> StorageClient:
         pass
 
     @abstractmethod
@@ -84,7 +84,7 @@ class TestStorageClient(unittest.TestCase):
         pass
 
     def test_create_destroy(self) -> None:
-        self.storage_client = self.init_object()
+        self.storage_client = self.init_object(0)
         cfg = self.cfg_create(0)
         self.pre_create(0)
         self.storage_client.create(cfg)
@@ -92,7 +92,7 @@ class TestStorageClient(unittest.TestCase):
         self.post_destroy(0)
 
     def test_init_fini(self) -> None:
-        self.storage_client = self.init_object()
+        self.storage_client = self.init_object(0)
         self.pre_create(0)
         self.storage_client.create(self.cfg_create(0))
         self.storage_client.fini()
@@ -101,7 +101,7 @@ class TestStorageClient(unittest.TestCase):
         self.storage_client.init(self.cfg_init(0))
         self.storage_client.fini()
         self.post_fini(0)
-        self.storage_client = self.init_object()
+        self.storage_client = self.init_object(0)
         self.pre_init(0)
         self.storage_client.init(self.cfg_init(0))
         self.storage_client.destroy()
@@ -188,7 +188,7 @@ class TestStorageClient(unittest.TestCase):
         N: int = self.cfg_test()['simple_N']
         blob_size_max = self.cfg_test()['simple_blob_size_max']
 
-        self.storage_client = self.init_object()
+        self.storage_client = self.init_object(0)
 
         # prepare test data and files
         test_data = [random.randbytes(random.randrange(blob_size_max + 1))

@@ -31,6 +31,7 @@ import logging
 import pathlib
 
 from collections.abc import Sequence
+from urllib.parse import urlparse
 from typing import Any, Optional
 
 from mze.api.storage import BlobId, BlobInfo, BlobData, StorageClient
@@ -45,6 +46,7 @@ class StorageClientDir(StorageClient):
 
     - init()/fini()
     - create()/destroy()
+    - fsck()
     - get()
     - put()
     - head()
@@ -54,21 +56,21 @@ class StorageClientDir(StorageClient):
     path: pathlib.Path
 
     def init(self, cfg: dict[str, Any]) -> None:
-        """
-        Parameters in cfg:
-        path: Union[str, pathlib.Path]
-        """
         logger.debug(f'{cfg=}')
-        self.path = pathlib.Path(cfg['path'])
+        parse_result = urlparse(self.server_url)
+        assert parse_result.scheme == 'file', (parse_result, self.server_url)
+        self.path = pathlib.Path(parse_result.path)
 
     def fini(self) -> None:
         logger.debug(f'{self.path=}')
 
     def create(self, cfg: dict[str, Any]) -> None:
+        logger.debug(f'{cfg=}')
         self.init(cfg)
         self.path.mkdir(parents=True)
 
     def destroy(self) -> None:
+        logger.debug(f'{self.path=}')
         self.path.rmdir()
 
     def fsck(self) -> None:

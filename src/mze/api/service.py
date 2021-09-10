@@ -44,6 +44,7 @@ class ServiceServer(Service):
 
 
 class ServiceClient(Service):
+    # TODO s/servier_url/service_uri/g
     server_url: str
 
     def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
