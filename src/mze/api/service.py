@@ -17,9 +17,10 @@
 
 import uuid
 
-from abc import ABC, abstractmethod
-from typing import Optional, Any
+from abc import ABC
 from dataclasses import dataclass
+
+from .cli import CLI
 
 
 # TODO define mze.api.Id, subclass it for every SomethingId
@@ -28,20 +29,12 @@ class ServiceId:
     sid: uuid.UUID
 
 
-class Service(ABC):
+class Service(CLI, ABC):
     instance_id: ServiceId
 
-    def __init__(self, *,
-                 cfg: dict[str, Any],
-                 argv: Optional[list[str]] = None,
-                 environ: Optional[dict[str, str]] = None) -> None:
-        if environ is not None:
-            if 'MZE_INSTANCE_ID' in environ:
-                self.instance_id.sid = uuid.UUID(environ['MZE_INSTANCE_ID'])
-        # TODO handle --instance-id parameter from argv
-        if 'MZE_INSTANCE_ID' in cfg:
-            self.instance_id.sid = uuid.UUID(cfg['MZE_INSTANCE_ID'])
-
-    @abstractmethod
-    def run(self) -> None:
-        pass
+    def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
+                               environ: dict[str, str]) -> None:
+        self.parse_cfg_argv_environ_single(cfg, argv, environ,
+                                           cfg_key='MZE_INSTANCE_ID',
+                                           argv_flags=['--instance-id'],
+                                           environ_key='MZE_INSTANCE_ID')

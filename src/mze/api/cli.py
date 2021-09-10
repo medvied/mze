@@ -15,7 +15,10 @@
 # limitations under the License.
 
 
+import argparse
+
 from abc import ABC, abstractmethod
+from typing import Optional, Any
 
 
 class CLI(ABC):
@@ -47,3 +50,27 @@ class CLI(ABC):
                 #   ^
                 # It's a false positive because there is a check that the
                 # function is actually present in the class.
+
+    def parse_cfg_argv_environ_single(
+            self, cfg: dict[str, str], argv: list[str],
+            environ: dict[str, str], *,
+            cfg_key: Optional[str] = None,
+            argv_flags: Optional[list[str]] = None,
+            argv_kwargs: Optional[dict[str, Any]] = None,
+            environ_key: Optional[str] = None) -> Any:
+        assert argv_kwargs is None or argv_flags is not None, \
+            (argv_kwargs, argv_flags)
+        if cfg_key is not None and cfg_key in cfg:
+            return cfg[cfg_key]
+        if argv_flags is not None:
+            parser = argparse.ArgumentParser(allow_abbrev=False)
+            if argv_kwargs is None:
+                store_action = parser.add_argument(*argv_flags)
+            else:
+                store_action = parser.add_argument(*argv_flags, **argv_kwargs)
+            args = parser.parse_known_args(args=argv)
+            if (value := vars(args)[store_action.dest]) is not None:
+                return value
+        if environ_key is not None and environ_key in environ:
+            return environ[environ_key]
+        return None

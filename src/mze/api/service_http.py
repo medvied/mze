@@ -17,24 +17,18 @@
 
 from .service import Service
 
-from typing import Optional, Any
 from aiohttp import web
 
 
 class ServiceHTTP(Service):
     web_location: str
 
-    def __init__(self, *,
-                 cfg: dict[str, Any],
-                 argv: Optional[list[str]] = None,
-                 environ: Optional[dict[str, str]] = None) -> None:
-        super().__init__(cfg=cfg, argv=argv, environ=environ)
-        if environ is not None:
-            if 'MZE_WEB_LOCATION' in environ:
-                self.web_location = environ['MZE_WEB_LOCATION']
-        # TODO handle --web-location parameter from argv
-        if 'MZE_WEB_LOCATION' in cfg:
-            self.web_location = cfg['MZE_WEB_LOCATION']
+    def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
+                               environ: dict[str, str]) -> None:
+        self.parse_cfg_argv_environ_single(cfg, argv, environ,
+                                           cfg_key='MZE_WEB_LOCATION',
+                                           argv_flags=['--web-location'],
+                                           environ_key='MZE_WEB_LOCATION')
 
     def run(self) -> None:
         main_app = web.Application()
