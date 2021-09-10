@@ -15,6 +15,11 @@
 # limitations under the License.
 
 
+from .service import ServiceId
+from .service import Service
+
+from .cli import CLI
+
 from .storage import BlobId
 from .storage import BlobInfo
 from .storage import BlobData
@@ -22,24 +27,23 @@ from .storage import Storage
 from .storage import StorageServer
 from .storage import StorageClient
 
-from .service import ServiceId
-from .service import Service
-
 from .service_http import ServiceHTTP
 from .service_http import ServiceHTTPServer
 from .service_http import ServiceHTTPClient
 
 
 __all__ = [
+    'CLI',
+
+    'ServiceId',
+    'Service',
+
     'BlobId',
     'BlobInfo',
     'BlobData',
     'Storage',
     'StorageServer',
     'StorageClient',
-
-    'ServiceId',
-    'Service',
 
     'ServiceHTTP',
     'ServiceHTTPServer',
