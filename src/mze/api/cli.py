@@ -58,7 +58,8 @@ class CLI(ABC):
             environ: dict[str, str], *,
             key: Optional[str] = None,
             argv_flags: Optional[list[str]] = None,
-            argv_kwargs: Optional[dict[str, Any]] = None) -> Any:
+            argv_kwargs: Optional[dict[str, Any]] = None,
+            default_value: Any = None) -> Any:
         assert argv_kwargs is None or argv_flags is not None, \
             (argv_kwargs, argv_flags)
         if key is not None and key in cfg:
@@ -75,4 +76,4 @@ class CLI(ABC):
                 return value
         if key is not None and key in environ:
             return environ[key]
-        return None
+        return default_value
