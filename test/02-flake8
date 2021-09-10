@@ -15,6 +15,8 @@
 # limitations under the License.
 
 
+import sys
+
 from plumbum import local, FG
 
 from common import common
@@ -31,6 +33,7 @@ TARGETS = [
 
 
 def main() -> None:
+    sys.tracebacklimit = 0  # TODO make a generic function
     for target in TARGETS:
         flake8[target] & FG
 

@@ -16,6 +16,7 @@
 
 
 import os
+import sys
 
 from plumbum import local, FG
 
@@ -44,6 +45,7 @@ TARGETS = [
 
 
 def main() -> None:
+    sys.tracebacklimit = 0
     global PYTHONPATH
     if 'PYTHONPATH' in os.environ:
         PYTHONPATH = f'{PYTHONPATH}:{os.environ["PYTHONPATH"]}'
