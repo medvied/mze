@@ -25,15 +25,10 @@ class ServiceHTTP(Service):
 
 
 class ServiceHTTPServer(ServiceHTTP):
-    client_url: str
     web_location: str
 
     def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
                                environ: dict[str, str]) -> None:
-        self.client_url = self.parse_cfg_argv_environ_single(
-            cfg, argv, environ,
-            key='MZE_CLIENT_URL',
-            argv_flags=['--client-url'])
         self.web_location = self.parse_cfg_argv_environ_single(
             cfg, argv, environ,
             key='MZE_WEB_LOCATION',
