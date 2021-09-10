@@ -15,9 +15,9 @@
 # limitations under the License.
 
 
-from .dir import StorageDir
+from .dir import StorageClientDir
 from .http import StorageServerHTTP
 
 
-class StorageDirServerHTTP(StorageDir, StorageServerHTTP):
+class StorageServerHTTPClientDir(StorageServerHTTP, StorageClientDir):
     pass

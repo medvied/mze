@@ -15,14 +15,14 @@
 # limitations under the License.
 
 
-from mze.storage.dir import StorageDir
+from mze.storage.dir import StorageClientDir
 from mze.storage.http import StorageServerHTTP
 from mze.storage.http import StorageClientHTTP
-from mze.storage.combinations import StorageDirServerHTTP
+from mze.storage.combinations import StorageServerHTTPClientDir
 
 __all__ = [
-    'StorageDir',
+    'StorageClientDir',
     'StorageServerHTTP',
     'StorageClientHTTP',
-    'StorageDirServerHTTP',
+    'StorageServerHTTPClientDir',
 ]

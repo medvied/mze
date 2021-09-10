@@ -19,11 +19,11 @@ import tempfile
 
 from typing import Any
 
-from mze import StorageDir
+from mze import StorageClientDir
 from mze.api.test import TestStorage
 
 
-class TestStorageDir(TestStorage, StorageDir):
+class TestStorageClientDir(TestStorage, StorageClientDir):
     temp_dir: pathlib.Path
 
     def cfg_test(self) -> dict[str, Any]:

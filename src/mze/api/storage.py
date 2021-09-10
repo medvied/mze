@@ -194,22 +194,20 @@ class BlobData:
 
 class Storage(ABC):
     """
-    Subclasses of this class implement the abstract methods.
-    In combination with StorageServer and StorageClient this allows to separate
-    network transport from Storage implementation.
+    Subclasses of this class implement or use the abstract methods.
+    Combination of StorageServer and StorageClient allows to separate
+    network transport from the actual implementation.
 
     Example:
-    #. Make StorageDir(Storage) and implement abstract methods that are using
-      files and directories to store the data.
+    #. Make StorageClientDir(StorageClient) and implement abstract methods that
+       are using files and directories to store the data.
     #. Make StorageServerHTTP(StorageServer) which receives requests over HTTP
        and calls the abstract methods to execute them.
-    #. Make StorageDirHTTP(StorageServerHTTP, StorageDir). This would join both
-       transport and implementation.
+    #. Make StorageServerHTTPClientDir(StorageServerHTTP, StorageClientDir).
+       This would join both transport and implementation.
     #. Make StorageClientHTTP(StorageClient) which implements abstract methods
        of Storage by making requests to StorageServerHTTP over HTTP. This would
        allow to use StorageServerHTTP over the network.
-    #. Make StorageClientDir(StorageClient, StorageDir). It would be a Storage
-       Client which uses local directories and files to store the data.
     """
     @abstractmethod
     def init(self, cfg: dict[str, Any]) -> None:

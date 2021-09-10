@@ -39,13 +39,13 @@ from pathlib import Path
 from aiohttp import web
 from typing import Any, Callable, Awaitable, Optional
 
-from mze.api.storage import BlobId, BlobInfo, BlobData, Storage
+from mze.api.storage import BlobId, BlobInfo, BlobData, StorageClient
 
 
 logger = logging.getLogger(__name__)
 
 
-class StorageDir(Storage):
+class StorageClientDir(StorageClient):
     """
     API
 
@@ -136,10 +136,6 @@ class StorageDir(Storage):
         info = self._head_one(bid)
         file_path.unlink()
         return info
-
-
-class StorageDirCLI:
-    pass
 
 
 @dataclass
