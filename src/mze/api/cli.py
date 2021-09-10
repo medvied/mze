@@ -64,7 +64,8 @@ class CLI(ABC):
         if key is not None and key in cfg:
             return cfg[key]
         if argv_flags is not None:
-            parser = argparse.ArgumentParser(allow_abbrev=False)
+            parser = argparse.ArgumentParser(prog='python -m mze',
+                                             allow_abbrev=False)
             if argv_kwargs is None:
                 store_action = parser.add_argument(*argv_flags)
             else:
