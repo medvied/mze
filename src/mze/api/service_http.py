@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-from .service import Service
+from .service import Service, ServiceServer, ServiceClient
 
 from aiohttp import web
 
@@ -24,7 +24,7 @@ class ServiceHTTP(Service):
     pass
 
 
-class ServiceHTTPServer(ServiceHTTP):
+class ServiceHTTPServer(ServiceHTTP, ServiceServer):
     web_location: str
 
     def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
@@ -47,12 +47,5 @@ class ServiceHTTPServer(ServiceHTTP):
         return application
 
 
-class ServiceHTTPClient(ServiceHTTP):
-    server_url: str
-
-    def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
-                               environ: dict[str, str]) -> None:
-        self.server_url = self.parse_cfg_argv_environ_single(
-            cfg, argv, environ,
-            key='MZE_SERVER_URL',
-            argv_flags=['--server-url'])
+class ServiceHTTPClient(ServiceHTTP, ServiceClient):
+    pass

@@ -37,3 +37,18 @@ class Service(CLI, ABC):
         self.parse_cfg_argv_environ_single(cfg, argv, environ,
                                            key='MZE_INSTANCE_ID',
                                            argv_flags=['--instance-id'])
+
+
+class ServiceServer(Service):
+    pass
+
+
+class ServiceClient(Service):
+    server_url: str
+
+    def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
+                               environ: dict[str, str]) -> None:
+        self.server_url = self.parse_cfg_argv_environ_single(
+            cfg, argv, environ,
+            key='MZE_SERVER_URL',
+            argv_flags=['--server-url'])
