@@ -16,6 +16,7 @@
 
 """
 TODO test put() with BlobId=None
+TODO test fsck()
 TODO random test: make a random deterministic (defined by seed) sequence of
 put()s and delete()s and run it. Check catalog(), get() and head() after each
 element of the sequence.
@@ -31,11 +32,17 @@ import unittest
 from abc import abstractmethod
 from typing import Any
 
-import mze.api
+from mze.api import StorageClient
 from mze.api.storage import BlobId, BlobData
 
 
-class TestStorage(unittest.TestCase, mze.api.Storage):
+class TestStorageClient(unittest.TestCase):
+    storage_client: StorageClient
+
+    @abstractmethod
+    def init_object(self) -> StorageClient:
+        pass
+
     @abstractmethod
     def cfg_test(self) -> dict[str, Any]:
         pass
@@ -77,20 +84,27 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
         pass
 
     def test_create_destroy(self) -> None:
+        self.storage_client = self.init_object()
         cfg = self.cfg_create(0)
         self.pre_create(0)
-        self.create(cfg)
-        self.destroy()
+        self.storage_client.create(cfg)
+        self.storage_client.destroy()
         self.post_destroy(0)
 
     def test_init_fini(self) -> None:
+        self.storage_client = self.init_object()
         self.pre_create(0)
-        self.create(self.cfg_create(0))
-        self.fini()
+        self.storage_client.create(self.cfg_create(0))
+        self.storage_client.fini()
         self.post_fini(0)
         self.pre_init(0)
-        self.init(self.cfg_init(0))
-        self.destroy()
+        self.storage_client.init(self.cfg_init(0))
+        self.storage_client.fini()
+        self.post_fini(0)
+        self.storage_client = self.init_object()
+        self.pre_init(0)
+        self.storage_client.init(self.cfg_init(0))
+        self.storage_client.destroy()
         self.post_destroy(0)
 
     def check_presence(self, supposedly_present: list[bool],
@@ -98,16 +112,17 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                        one_by_one: bool) -> None:
         N = len(test_ids)
         if one_by_one:
-            infos = [self.head([test_ids[i]])[0] for i in range(N)]
+            infos = [self.storage_client.head([test_ids[i]])[0]
+                     for i in range(N)]
         else:
-            infos = self.head(test_ids)
+            infos = self.storage_client.head(test_ids)
         self.assertEqual(len(infos), N)
         for i, info in enumerate(infos):
             if info is None:
                 self.assertFalse(supposedly_present[i])
             else:
                 self.assertEqual(info.size, len(test_data[i]))
-        c = self.catalog()
+        c = self.storage_client.catalog()
         c_bids = sorted([bid for bid, _ in c], key=lambda bid: bid.bid)
         p_bids = sorted([bid for i, bid in enumerate(test_ids)
                          if supposedly_present[i]], key=lambda bid: bid.bid)
@@ -135,7 +150,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                     blob_data = BlobData(data=test_data[i], path=None)
                 blobs.append((test_ids[i], blob_data))
                 sizes.append(len(test_data[i]))
-        ids_infos = self.put(blobs=blobs)
+        ids_infos = self.storage_client.put(blobs=blobs)
         for j in range(len(blobs)):
             bid, info = ids_infos[j]
             self.assertEqual(bid.bid, blobs[j][0].bid)
@@ -149,9 +164,9 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                    one_by_one: bool) -> None:
         N = len(test_ids)
         if one_by_one:
-            datas = [self.get([bid])[0] for bid in test_ids]
+            datas = [self.storage_client.get([bid])[0] for bid in test_ids]
         else:
-            datas = self.get(test_ids)
+            datas = self.storage_client.get(test_ids)
         self.assertEqual(len(datas), N)
         for i, data in enumerate(datas):
             if data is None:
@@ -173,6 +188,8 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
         N: int = self.cfg_test()['simple_N']
         blob_size_max = self.cfg_test()['simple_blob_size_max']
 
+        self.storage_client = self.init_object()
+
         # prepare test data and files
         test_data = [random.randbytes(random.randrange(blob_size_max + 1))
                      for i in range(N)]
@@ -184,7 +201,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
                 f.write(test_data[i])
 
         self.pre_create(0)
-        self.create(self.cfg_create(0))
+        self.storage_client.create(self.cfg_create(0))
 
         # test put(), get(), head(), catalog()
         # the first N//5 * 4 blobs are put one by one,
@@ -206,7 +223,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
 
         # test delete()
         for i in range(N):
-            info = self.delete([test_ids[i]])
+            info = self.storage_client.delete([test_ids[i]])
             present[i] = False
             self.assertEqual(len(info), 1)
             self.assertIsNot(info[0], None)
@@ -214,7 +231,7 @@ class TestStorage(unittest.TestCase, mze.api.Storage):
             self.assertEqual(info[0].size, len(test_data[i]))
             self.check_presence(present, test_ids, test_data, i % (N//7) == 0)
 
-        self.destroy()
+        self.storage_client.destroy()
         self.post_destroy(0)
 
         # remove test data and files

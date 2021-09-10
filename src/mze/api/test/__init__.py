@@ -15,8 +15,8 @@
 # limitations under the License.
 
 
-from .storage import TestStorage
+from .storage import TestStorageClient
 
 __all__ = [
-    'TestStorage',
+    'TestStorageClient',
 ]
