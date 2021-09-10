@@ -32,14 +32,12 @@ class ServiceHTTPServer(ServiceHTTP):
                                environ: dict[str, str]) -> None:
         self.client_url = self.parse_cfg_argv_environ_single(
             cfg, argv, environ,
-            cfg_key='MZE_CLIENT_URL',
-            argv_flags=['--client-url'],
-            environ_key='MZE_CLIENT_URL')
+            key='MZE_CLIENT_URL',
+            argv_flags=['--client-url'])
         self.web_location = self.parse_cfg_argv_environ_single(
             cfg, argv, environ,
-            cfg_key='MZE_WEB_LOCATION',
-            argv_flags=['--web-location'],
-            environ_key='MZE_WEB_LOCATION')
+            key='MZE_WEB_LOCATION',
+            argv_flags=['--web-location'])
 
     def run(self) -> None:
         main_app = web.Application()
@@ -64,6 +62,5 @@ class ServiceHTTPClient(ServiceHTTP):
                                environ: dict[str, str]) -> None:
         self.server_url = self.parse_cfg_argv_environ_single(
             cfg, argv, environ,
-            cfg_key='MZE_SERVER_URL',
-            argv_flags=['--server-url'],
-            environ_key='MZE_SERVER_URL')
+            key='MZE_SERVER_URL',
+            argv_flags=['--server-url'])

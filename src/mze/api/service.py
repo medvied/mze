@@ -35,6 +35,5 @@ class Service(CLI, ABC):
     def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
                                environ: dict[str, str]) -> None:
         self.parse_cfg_argv_environ_single(cfg, argv, environ,
-                                           cfg_key='MZE_INSTANCE_ID',
-                                           argv_flags=['--instance-id'],
-                                           environ_key='MZE_INSTANCE_ID')
+                                           key='MZE_INSTANCE_ID',
+                                           argv_flags=['--instance-id'])
