@@ -40,16 +40,18 @@ class CLI(ABC):
 
     def parse_cfg_argv_environ_all(self, cfg: dict[str, str], argv: list[str],
                                    environ: dict[str, str]) -> None:
+        c: Any
         for c in self.__class__.mro()[::-1]:
-            if 'parse_argv_environ' in vars(c):
-                c.parse_argv_environ(self, cfg, argv, environ)  # type: ignore
+            if hasattr(c, 'parse_cfg_argv_environ'):
+                c.parse_cfg_argv_environ(self, cfg, argv, environ)
                 # mypy complains about the previous line:
-                # error: "type" has no attribute "parse_argv_environ"
+                # error: "type" has no attribute "parse_cfg_argv_environ"
                 # [attr-defined]
                 #   c.parse_argv_environ(self, argv, environ)
                 #   ^
                 # It's a false positive because there is a check that the
                 # function is actually present in the class.
+                # Solution: disable type checks with "c: Any".
 
     def parse_cfg_argv_environ_single(
             self, cfg: dict[str, str], argv: list[str],
