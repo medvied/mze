@@ -40,14 +40,15 @@ from collections.abc import Sequence
 from typing import Optional, Any
 from aiohttp import web
 
-import mze.api
+from mze.api import StorageServer, ServiceHTTPServer
+from mze.api import StorageClient
 from mze.api import BlobId, BlobInfo, BlobData
 
 
 logger = logging.getLogger(__name__)
 
 
-class StorageServerHTTP(mze.api.StorageServer, mze.api.ServiceHTTPServer):
+class StorageServerHTTP(StorageServer, ServiceHTTPServer):
     ENDPOINTS: dict[str, Any] = {
         'put': web.put,
         'get': web.get,
@@ -143,9 +144,7 @@ class StorageServerHTTP(mze.api.StorageServer, mze.api.ServiceHTTPServer):
         return app
 
 
-class StorageClientHTTP(mze.api.StorageClient):
-    server_url: str
-
+class StorageClientHTTP(StorageClient):
     def init_or_create(self, cfg: dict[str, Any], op: str) -> None:
         requests.get(f'{self.server_url}/{op}', data=cfg)
 
