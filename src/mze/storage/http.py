@@ -47,7 +47,7 @@ from mze.api import BlobId, BlobInfo, BlobData
 logger = logging.getLogger(__name__)
 
 
-class StorageServerHTTP(mze.api.StorageServer, mze.api.ServiceHTTP):
+class StorageServerHTTP(mze.api.StorageServer, mze.api.ServiceHTTPServer):
     ENDPOINTS: dict[str, Any] = {
         'put': web.put,
         'get': web.get,

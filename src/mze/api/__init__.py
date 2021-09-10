@@ -26,6 +26,8 @@ from .service import ServiceId
 from .service import Service
 
 from .service_http import ServiceHTTP
+from .service_http import ServiceHTTPServer
+from .service_http import ServiceHTTPClient
 
 
 __all__ = [
@@ -40,4 +42,6 @@ __all__ = [
     'Service',
 
     'ServiceHTTP',
+    'ServiceHTTPServer',
+    'ServiceHTTPClient',
 ]

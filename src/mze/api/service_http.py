@@ -21,14 +21,25 @@ from aiohttp import web
 
 
 class ServiceHTTP(Service):
+    pass
+
+
+class ServiceHTTPServer(ServiceHTTP):
+    client_url: str
     web_location: str
 
     def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
                                environ: dict[str, str]) -> None:
-        self.parse_cfg_argv_environ_single(cfg, argv, environ,
-                                           cfg_key='MZE_WEB_LOCATION',
-                                           argv_flags=['--web-location'],
-                                           environ_key='MZE_WEB_LOCATION')
+        self.client_url = self.parse_cfg_argv_environ_single(
+            cfg, argv, environ,
+            cfg_key='MZE_CLIENT_URL',
+            argv_flags=['--client-url'],
+            environ_key='MZE_CLIENT_URL')
+        self.web_location = self.parse_cfg_argv_environ_single(
+            cfg, argv, environ,
+            cfg_key='MZE_WEB_LOCATION',
+            argv_flags=['--web-location'],
+            environ_key='MZE_WEB_LOCATION')
 
     def run(self) -> None:
         main_app = web.Application()
@@ -44,3 +55,15 @@ class ServiceHTTP(Service):
         application['MZE_WEB_LOCATION'] = self.web_location
         # TODO add /health endpoint
         return application
+
+
+class ServiceHTTPClient(ServiceHTTP):
+    server_url: str
+
+    def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
+                               environ: dict[str, str]) -> None:
+        self.server_url = self.parse_cfg_argv_environ_single(
+            cfg, argv, environ,
+            cfg_key='MZE_SERVER_URL',
+            argv_flags=['--server-url'],
+            environ_key='MZE_SERVER_URL')
