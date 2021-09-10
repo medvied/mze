@@ -71,8 +71,8 @@ class CLI(ABC):
                 store_action = parser.add_argument(*argv_flags)
             else:
                 store_action = parser.add_argument(*argv_flags, **argv_kwargs)
-            args = parser.parse_known_args(args=argv)
-            if (value := vars(args)[store_action.dest]) is not None:
+            args, _ = parser.parse_known_args(args=argv)
+            if (value := getattr(args, store_action.dest)) is not None:
                 return value
         if key is not None and key in environ:
             return environ[key]
