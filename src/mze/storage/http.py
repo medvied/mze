@@ -136,12 +136,11 @@ class StorageServerHTTP(mze.api.StorageServer, mze.api.ServiceHTTPServer):
         else:
             return await self.handler_management(request, op)
 
-    def app(self) -> web.Application:
-        application = super().app()
-        application.add_routes([
-            method(f'/{endpoint}', self.handler)
-            for endpoint, method in self.ENDPOINTS.items()])
-        return application
+    def application(self) -> web.Application:
+        app = super().application()
+        app.add_routes([method(f'/{endpoint}', self.handler)
+                        for endpoint, method in self.ENDPOINTS.items()])
+        return app
 
 
 class StorageClientHTTP(mze.api.StorageClient):
