@@ -14,9 +14,9 @@
    limitations under the License.
 
 
-==================
-Max's Zettelkasten
-==================
+====================
+Medvied Zettelkasten
+====================
 
 Overview
 ========
