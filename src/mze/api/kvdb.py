@@ -49,41 +49,41 @@ class DBResult:
 class KVDB(ABC):
     @abstractmethod
     def table_create(self, tables: list[DBTable]) -> list[DBResult]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def table_delete(self, tables: list[DBTable]) -> list[DBResult]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def table_catalog(self) -> list[DBTable]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def lookup(self, keys: list[tuple[DBTable, DBKey, int]]) -> \
             list[list[tuple[DBResult, Optional[DBValue]]]]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def insert(self, kvs: list[tuple[DBTable, DBKey, DBValue]], *,
                return_old_values: bool) -> \
             list[tuple[DBResult, Optional[DBValue]]]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def update(self, kvs: list[tuple[DBTable, DBKey, DBValue]], *,
                return_old_values: bool) -> \
             list[tuple[DBResult, Optional[DBValue]]]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def upsert(self, kvs: list[tuple[DBTable, DBKey, DBValue]], *,
                return_old_values: bool) -> \
             list[tuple[DBResult, Optional[DBValue]]]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def delete(self, keys: list[tuple[DBTable, DBKey]], *,
                return_old_values: bool) -> \
             list[tuple[DBResult, Optional[DBValue]]]:
-        pass
+        raise NotImplementedError

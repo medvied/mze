@@ -32,11 +32,14 @@ class CLI(ABC):
     @abstractmethod
     def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
                                environ: dict[str, str]) -> None:
+        # It's not raising NotImplementedError because all functions with this
+        # name are being called from parse_cfg_argv_environ_all(), including
+        # this one.
         pass
 
     @abstractmethod
     def run(self) -> None:
-        pass
+        raise NotImplementedError
 
     def parse_cfg_argv_environ_all(self, cfg: dict[str, str], argv: list[str],
                                    environ: dict[str, str]) -> None:

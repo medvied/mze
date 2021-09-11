@@ -41,11 +41,11 @@ class TestStorageClient(unittest.TestCase):
 
     @abstractmethod
     def init_object(self, ii: int) -> StorageClient:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def cfg_test(self) -> dict[str, Any]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def instance_index_max(self) -> int:
@@ -57,31 +57,31 @@ class TestStorageClient(unittest.TestCase):
         will limit the number of concurrently created instaces of the class
         under test.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def cfg_create(self, ii: int) -> dict[str, Any]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def cfg_init(self, ii: int) -> dict[str, Any]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def pre_create(self, ii: int) -> None:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def post_destroy(self, ii: int) -> None:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def pre_init(self, ii: int) -> None:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def post_fini(self, ii: int) -> None:
-        pass
+        raise NotImplementedError
 
     def test_create_destroy(self) -> None:
         self.storage_client = self.init_object(0)

@@ -216,18 +216,18 @@ class Storage(ABC):
 
     @abstractmethod
     def init(self, cfg: dict[str, Any]) -> None:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def fini(self) -> None:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def create(self, cfg: dict[str, Any]) -> None:
         """
         Implies init().
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def destroy(self) -> None:
@@ -235,11 +235,11 @@ class Storage(ABC):
         Implies fini().
         Assumption: there are no blobs left.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def fsck(self) -> None:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get(self, bids: Sequence[BlobId]) -> list[Optional[BlobData]]:
@@ -247,24 +247,24 @@ class Storage(ABC):
         Returns None if there is no such blob.
         Returns filename or bytes in case if there is such blob.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def put(self, blobs: Sequence[tuple[Optional[BlobId], BlobData]]) -> \
             list[tuple[BlobId, BlobInfo]]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def head(self, bids: Sequence[BlobId]) -> list[Optional[BlobInfo]]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def catalog(self) -> list[tuple[BlobId, BlobInfo]]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def delete(self, bids: Sequence[BlobId]) -> list[Optional[BlobInfo]]:
-        pass
+        raise NotImplementedError
 
 
 class StorageServer(Storage, ServiceServer, CLI):
