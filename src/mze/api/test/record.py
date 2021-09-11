@@ -15,10 +15,10 @@
 # limitations under the License.
 
 
-from .storage import TestStorageClient
-from .record import TestRecordDBClient
+import unittest
 
-__all__ = [
-    'TestStorageClient',
-    'TestRecordDBClient',
-]
+from mze.api import RecordDBClient
+
+
+class TestRecordDBClient(unittest.TestCase):
+    record_db_client: RecordDBClient

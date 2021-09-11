@@ -15,10 +15,8 @@
 # limitations under the License.
 
 
-from .storage import TestStorageClient
-from .record import TestRecordDBClient
+from mze.api.test import TestRecordDBClient
 
-__all__ = [
-    'TestStorageClient',
-    'TestRecordDBClient',
-]
+
+class TestRecordDBClientSQLite(TestRecordDBClient):
+    pass

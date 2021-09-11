@@ -15,10 +15,8 @@
 # limitations under the License.
 
 
-from .storage import TestStorageClient
-from .record import TestRecordDBClient
+from .sqlite import TestRecordDBClientSQLite
 
 __all__ = [
-    'TestStorageClient',
-    'TestRecordDBClient',
+    'TestRecordDBClientSQLite',
 ]
