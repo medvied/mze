@@ -20,6 +20,10 @@ from typing import Any
 
 
 class Store(ABC):
+    """
+    TODO add snapshot API
+    TODO add export/import API
+    """
     @abstractmethod
     def init(self, cfg: dict[str, Any]) -> None:
         raise NotImplementedError
