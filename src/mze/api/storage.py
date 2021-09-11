@@ -163,6 +163,7 @@ TODO
 
 """
 
+import sys
 import json
 import uuid
 import shutil
@@ -185,6 +186,9 @@ class BlobId:
 @dataclass
 class BlobInfo:
     size: int
+
+    def __str__(self):
+        return str(self.size)
 
 
 @dataclass
@@ -296,7 +300,7 @@ class StorageServer(Storage, ServiceServer, CLI):
 
 class StorageClient(Storage, ServiceClient, CLI):
     cmds: str
-    blob_id: Optional[uuid.UUID]
+    blob_id: Optional[BlobId]
     filename_in: str
     filename_out: str
     init_cfg: dict[str, Any]
@@ -315,7 +319,8 @@ class StorageClient(Storage, ServiceClient, CLI):
             cfg, argv, environ,
             key='MZE_BLOB_ID',
             argv_flags=['--blob-id'],
-            argv_kwargs={'type': uuid.UUID, 'default': None})
+            argv_kwargs={'type': lambda x: BlobId(bid=uuid.UUID(x)),
+                         'default': None})
         self.filename_in = self.parse_cfg_argv_environ_single(
             cfg, argv, environ,
             key='MZE_FILENAME_IN',
@@ -337,6 +342,15 @@ class StorageClient(Storage, ServiceClient, CLI):
             argv_flags=['--create-cfg'],
             argv_kwargs={'type': json.loads, 'default': {}})
 
+    def print_blob_id_info(self, blob_id_info: Sequence[
+            tuple[BlobId, Optional[BlobInfo]]]) -> None:
+        for blob_id, blob_info in blob_id_info:
+            print(blob_id.bid, end=' ')
+            if blob_info is None:
+                print('-')
+            else:
+                print(str(blob_info))
+
     def run(self) -> None:
         # TODO better error message
         assert self.server_url is not None, self.cmds
@@ -357,6 +371,36 @@ class StorageClient(Storage, ServiceClient, CLI):
                 self.destroy()
             elif cmd == 'fsck':
                 self.fsck()
+            elif cmd in ['get', 'put', 'head', 'catalog', 'delete']:
+                self.init(self.init_cfg)
+                if cmd == 'get':
+                    assert self.blob_id is not None
+                    blob_data = self.get([self.blob_id])[0]
+                    if blob_data is None:
+                        raise FileNotFoundError
+                    if self.filename_out == '-':
+                        sys.stdout.buffer.write(blob_data.get_bytes())
+                    else:
+                        blob_data.put_to_file(pathlib.Path(self.filename_out))
+                elif cmd == 'put':
+                    if self.filename_in == '-':
+                        blob_data = BlobData(data=sys.stdin.buffer.read(),
+                                             path=None)
+                    else:
+                        blob_data = BlobData(
+                            data=None, path=pathlib.Path(self.filename_in))
+                    self.print_blob_id_info(self.put([(self.blob_id,
+                                                       blob_data)]))
+                elif cmd == 'head':
+                    assert self.blob_id is not None
+                    self.print_blob_id_info([(self.blob_id,
+                                              self.head([self.blob_id])[0])])
+                elif cmd == 'catalog':
+                    self.print_blob_id_info(self.catalog())
+                elif cmd == 'delete':
+                    assert self.blob_id is not None
+                    self.print_blob_id_info([(self.blob_id,
+                                              self.delete([self.blob_id])[0])])
             else:
                 print(f'{self.cmds=} {cmd=}')
                 raise NotImplementedError
