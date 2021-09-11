@@ -187,7 +187,7 @@ class BlobId:
 class BlobInfo:
     size: int
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.size)
 
 
