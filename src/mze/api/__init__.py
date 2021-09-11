@@ -31,6 +31,11 @@ from .storage import Storage
 from .storage import StorageServer
 from .storage import StorageClient
 
+from .record import Record
+from .record import RecordDB
+from .record import RecordDBServer
+from .record import RecordDBClient
+
 
 __all__ = [
     'CLI',
@@ -48,4 +53,9 @@ __all__ = [
     'Storage',
     'StorageServer',
     'StorageClient',
+
+    'Record',
+    'RecordDB',
+    'RecordDBServer',
+    'RecordDBClient',
 ]
