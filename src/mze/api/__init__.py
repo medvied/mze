@@ -20,6 +20,8 @@ from .cli import CLI
 from .service import ServiceId
 from .service import Service
 
+from .store import Store
+
 from .service_http import ServiceHTTP
 from .service_http import ServiceHTTPServer
 from .service_http import ServiceHTTPClient
@@ -42,6 +44,8 @@ __all__ = [
 
     'ServiceId',
     'Service',
+
+    'Store',
 
     'ServiceHTTP',
     'ServiceHTTPServer',

@@ -30,82 +30,19 @@ import tempfile
 import unittest
 
 from abc import abstractmethod
-from typing import Any
 
 from mze.api import StorageClient
 from mze.api.storage import BlobId, BlobData
 
+from .store import TestStore
 
-class TestStorageClient(unittest.TestCase):
+
+class TestStorageClient(TestStore, unittest.TestCase):
     storage_client: StorageClient
 
     @abstractmethod
     def init_object(self, ii: int) -> StorageClient:
         raise NotImplementedError
-
-    @abstractmethod
-    def cfg_test(self) -> dict[str, Any]:
-        raise NotImplementedError
-
-    @abstractmethod
-    def instance_index_max(self) -> int:
-        """
-        Is not used right now.
-
-        Use case: in case if the amount of instances is limited (example: each
-        instance requires a TCP/IP port and # of ports is limited) this value
-        will limit the number of concurrently created instaces of the class
-        under test.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def cfg_create(self, ii: int) -> dict[str, Any]:
-        raise NotImplementedError
-
-    @abstractmethod
-    def cfg_init(self, ii: int) -> dict[str, Any]:
-        raise NotImplementedError
-
-    @abstractmethod
-    def pre_create(self, ii: int) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def post_destroy(self, ii: int) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def pre_init(self, ii: int) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def post_fini(self, ii: int) -> None:
-        raise NotImplementedError
-
-    def test_create_destroy(self) -> None:
-        self.storage_client = self.init_object(0)
-        cfg = self.cfg_create(0)
-        self.pre_create(0)
-        self.storage_client.create(cfg)
-        self.storage_client.destroy()
-        self.post_destroy(0)
-
-    def test_init_fini(self) -> None:
-        self.storage_client = self.init_object(0)
-        self.pre_create(0)
-        self.storage_client.create(self.cfg_create(0))
-        self.storage_client.fini()
-        self.post_fini(0)
-        self.pre_init(0)
-        self.storage_client.init(self.cfg_init(0))
-        self.storage_client.fini()
-        self.post_fini(0)
-        self.storage_client = self.init_object(0)
-        self.pre_init(0)
-        self.storage_client.init(self.cfg_init(0))
-        self.storage_client.destroy()
-        self.post_destroy(0)
 
     def check_presence(self, supposedly_present: list[bool],
                        test_ids: list[BlobId], test_data: list[bytes],
