@@ -165,6 +165,7 @@ TODO
 
 import json
 import uuid
+import shutil
 import pathlib
 
 from collections.abc import Sequence
@@ -190,10 +191,29 @@ class BlobInfo:
 class BlobData:
     """
     At least one of the fields should be something other than None.
-    TODO add invariant() to check that exactly one of files is set
     """
     data: Optional[bytes]
     path: Optional[pathlib.Path]
+
+    def get_bytes(self) -> bytes:
+        assert (self.data is not None) + (self.path is not None) == 1
+        if self.path is not None:
+            with open(self.path, 'rb') as f:
+                return f.read()
+        elif self.data is not None:
+            return self.data
+        else:
+            raise ValueError
+
+    def put_to_file(self, path: pathlib.Path) -> None:
+        assert (self.data is not None) + (self.path is not None) == 1
+        if self.path is not None:
+            shutil.copyfile(self.path, path)
+        elif self.data is not None:
+            with open(path, 'wb') as f:
+                f.write(self.data)
+        else:
+            raise ValueError
 
 
 class Storage(ABC):

@@ -172,17 +172,7 @@ class TestStorageClient(unittest.TestCase):
             if data is None:
                 self.assertFalse(supposedly_present[i])
             else:
-                self.assertEqual((data.data is not None) +
-                                 (data.path is not None), 1, f'{data}')
-                bdata: bytes
-                if data.data is not None:
-                    bdata = data.data
-                elif data.path is not None:
-                    with open(data.path, 'rb') as f:
-                        bdata = f.read()
-                else:
-                    bdata = b''
-                self.assertEqual(bdata, test_data[i])
+                self.assertEqual(data.get_bytes(), test_data[i])
 
     def test_simple(self) -> None:
         N: int = self.cfg_test()['simple_N']

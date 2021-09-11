@@ -182,14 +182,9 @@ class StorageClientHTTP(StorageClient, ServiceHTTPClient):
             list[tuple[BlobId, BlobInfo]]:
         ids_infos: list[tuple[BlobId, BlobInfo]] = []
         for bid, data in blobs:
-            if data.path is not None:
-                with open(data.path, 'rb') as f:
-                    binary_data = f.read()
-            elif data.data is not None:
-                binary_data = data.data
             params = {} if bid is None else {'id': str(bid.bid)}
             r = requests.put(f'{self.server_url}/put',
-                             data=binary_data, params=params)
+                             data=data.get_bytes(), params=params)
             # TODO validate before returning to the user
             ids_infos.append(r.json()[0])
         return ids_infos

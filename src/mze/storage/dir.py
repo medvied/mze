@@ -26,7 +26,6 @@ TODO make the implementation fully asynchronous with async/await
 """
 
 import uuid
-import shutil
 import logging
 import pathlib
 
@@ -106,14 +105,7 @@ class StorageClientDir(StorageClient):
             bid = BlobId(bid=uuid.uuid4())
         info = self._head_one(bid)
         assert info is None, info
-        assert (data.data is not None) + (data.path is not None) == 1, \
-            (bid, data)
-        file_path = self.path / str(bid.bid)
-        if data.path is not None:
-            shutil.copyfile(data.path, file_path)
-        elif data.data is not None:
-            with open(file_path, 'wb') as f:
-                f.write(data.data)
+        data.put_to_file(self.path / str(bid.bid))
         info = self._head_one(bid)
         assert info is not None, (bid, info, data)
         return (bid, info)
