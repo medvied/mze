@@ -176,6 +176,7 @@ from typing import Optional, Any
 
 from .cli import CLI
 from .service import ServiceServer, ServiceClient
+from .store import Store
 
 
 @dataclass
@@ -220,7 +221,7 @@ class BlobData:
             raise ValueError
 
 
-class Storage(ABC):
+class Storage(Store, ABC):
     """
     Subclasses of this class implement or use the abstract methods.
     Combination of StorageServer and StorageClient allows to separate
@@ -237,33 +238,6 @@ class Storage(ABC):
        of Storage by making requests to StorageServerHTTP over HTTP. This would
        allow to use StorageServerHTTP over the network.
     """
-
-    @abstractmethod
-    def init(self, cfg: dict[str, Any]) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def fini(self) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def create(self, cfg: dict[str, Any]) -> None:
-        """
-        Implies init().
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def destroy(self) -> None:
-        """
-        Implies fini().
-        Assumption: there are no blobs left.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def fsck(self) -> None:
-        raise NotImplementedError
 
     @abstractmethod
     def get(self, bids: Sequence[BlobId]) -> list[Optional[BlobData]]:
