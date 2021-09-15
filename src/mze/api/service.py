@@ -37,6 +37,8 @@ class Service(CLI, ABC):
         self.parse_cfg_argv_environ_single(cfg, argv, environ,
                                            key='MZE_INSTANCE_ID',
                                            argv_flags=['--instance-id'])
+        # TODO add MZE_LOG_DIR and MZE_PERSISTENCE_DIR
+        # TODO add and configure logging verbosity level
 
 
 class ServiceServer(Service):
@@ -44,7 +46,7 @@ class ServiceServer(Service):
 
 
 class ServiceClient(Service):
-    # TODO s/servier_url/service_uri/g
+    # TODO s/server_url/service_uri/g
     server_url: str
 
     def parse_cfg_argv_environ(self, cfg: dict[str, str], argv: list[str],
