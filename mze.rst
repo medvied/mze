@@ -592,14 +592,15 @@ Alternatives
       -
       -
 
-References
-==========
+Reading list
+============
 
 - https://typesense.org/about/
 - https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax
 - https://en.wikipedia.org/wiki/Key%E2%80%93value_database
 - https://c4model.com/
 - https://github.com/junegunn/fzf
+- https://scribe.rip/p/what-every-software-engineer-should-know-about-search-27d1df99f80d
 
 
 Ideas
