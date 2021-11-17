@@ -461,6 +461,7 @@ TODO
 - a script to generate & check copyright header for all files in the repo
 - CI to check everything pre-commit & post-commit
 - CI to create all the packages and create GitHub releases
+- run tests with several Python implementations (PyPy etc.)
 
 
 API
