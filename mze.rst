@@ -612,3 +612,5 @@ Ideas
 - query like "choose:date", and the datepicker appears below. "choose:contry",
   and the list of all attributes country=something appear bellow, which allows
   filtering by clicking on them.
+- vocabulary + citations from books/articles
+- installed gentoo package tree as test data
