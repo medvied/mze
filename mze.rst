@@ -68,7 +68,11 @@ Requirements
     * - R.record.immutable
       - Records that couldn't be changed MUST be supported.
     * - R.record.mutable
-      - Recrods that could be changed MUST be supported.
+      - Records that could be changed MUST be supported.
+    * - R.record.persistent
+      - Records that are persistent across MZE restarts MUST be supported.
+    * - R.record.volatile
+      - Records that are not persistent across MZE restarts MUST be supported.
     * - R.record.image
       - Image records are supported.
     * - R.record.sound
