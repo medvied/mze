@@ -183,7 +183,8 @@ Requirements
     * - R.records.10M
       - 10M records MUST be supported.
     * - R.rendering.instant
-      - Modifications should be re-rendered in the open windows immediately.
+      - Modifications should be re-rendered in all open currently open (in a
+        client) views immediately.
     * - R.record.sequence
       - Record type - sequence. Allows to create an ordered list of records.
     * - R.link.type
