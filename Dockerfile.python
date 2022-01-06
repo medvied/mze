@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # TODO add more distributions
-FROM python:3.9 AS common
+FROM python:3.10 AS common
 
 RUN pip install aiohttp[speedups] \
 	    aiofiles types-aiofiles \
