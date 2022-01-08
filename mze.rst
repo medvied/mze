@@ -580,6 +580,7 @@ Alternatives
 - https://en.wikipedia.org/wiki/Gnote
 - https://obsidian.md/features
 - https://www.dendron.so/
+- https://github.com/laurent22/joplin
 
 .. list-table::
 
