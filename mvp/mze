@@ -1,8 +1,58 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+#
+# Copyright 2021 Maksym Medvied
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+import sys
+
+from aiohttp import web
+
+
+async def search(request: web.Request) -> None:
+    return web.Response(text='search ok')
+
+
+async def edit(request: web.Request) -> None:
+    return web.Response(text='edit ok')
+
+
+async def view(request: web.Request) -> None:
+    return web.Response(text='view ok')
+
+
+def mkfs() -> None:
+    print('Running mkfs')
+
+
+def server() -> None:
+    print('Running server')
+    app = web.Application()
+    app.add_routes([
+        web.get('/server/search', search),
+        web.get('/server/edit', edit),
+        web.get('/server/view', view),
+    ])
+    web.run_app(app, port=80)
 
 
 def main() -> None:
-    pass
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'mkfs':
+            mkfs()
+        elif sys.argv[1] == 'server':
+            server()
 
 
 if __name__ == '__main__':
