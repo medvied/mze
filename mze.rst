@@ -239,6 +239,9 @@ Requirements
       - It MUST be possible to define a text (which is rendered as a still
         image) and a sound file and view them as a video with text-as-image as
         video and sound file and sound in the video.
+    * - R.search.shortcut
+      - Search shortcuts MUST be supported. Example: "m " is typed, search
+        engine assumes that it's "mze", not "m".
 
 
 Design
