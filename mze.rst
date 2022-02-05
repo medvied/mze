@@ -611,6 +611,7 @@ Reading list
 - https://c4model.com/
 - https://github.com/junegunn/fzf
 - https://scribe.rip/p/what-every-software-engineer-should-know-about-search-27d1df99f80d
+- https://solr.apache.org/features.html
 
 
 Ideas
