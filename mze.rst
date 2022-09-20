@@ -585,6 +585,7 @@ Alternatives
 - https://obsidian.md/features
 - https://www.dendron.so/
 - https://github.com/laurent22/joplin
+- https://github.com/zealdocs/zeal
 
 .. list-table::
 
