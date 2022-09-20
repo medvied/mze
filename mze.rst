@@ -586,6 +586,7 @@ Alternatives
 - https://www.dendron.so/
 - https://github.com/laurent22/joplin
 - https://github.com/zealdocs/zeal
+- https://github.com/qwfy/doc-browser
 
 .. list-table::
 
