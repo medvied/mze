@@ -22,14 +22,15 @@ Overview
 ========
 
 There are different ways to store information. There are multiple ways to store
-links to information. This software allows to link pieces of information in the
-way that relevant information is easy and fast to find.
+links to the information. This software allows to link pieces of information in
+the way that the relevant information is easy to find.
 
 Goals:
 
-- adding records/links between records is easy and fast;
+- adding records and links between records is easy and fast;
 - search feature allows to find relevant record as fast as it's technically
   possible. Software MUST NOT be a bottleneck during search.
+
 
 Glossary
 ========
@@ -37,7 +38,7 @@ Glossary
 .. glossary::
 
 Record
-  Piece of information.
+  A piece of information.
 
 Link
   An 1:1 relation between records.
