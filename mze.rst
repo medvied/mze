@@ -621,6 +621,8 @@ Reading list
 - https://github.com/junegunn/fzf
 - https://scribe.rip/p/what-every-software-engineer-should-know-about-search-27d1df99f80d
 - https://solr.apache.org/features.html
+- https://news.ycombinator.com/item?id=39432876
+  My productivity app is a never-ending .txt file
 
 
 Ideas
