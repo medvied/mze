@@ -243,6 +243,11 @@ Requirements
     * - R.search.shortcut
       - Search shortcuts MUST be supported. Example: "m " is typed, search
         engine assumes that it's "mze", not "m".
+    * - R.text.highlight
+      - A highligh record MUST be supported. Highlight record is a part of
+        another text record that is important for the purpose of the highlight.
+        Example: a record is full dmesg output, the highlight is a few lines in
+        one place and a few lines in another place that are symptoms of a bug.
 
 
 Design
