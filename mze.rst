@@ -623,6 +623,7 @@ Reading list
 - https://solr.apache.org/features.html
 - https://news.ycombinator.com/item?id=39432876
   My productivity app is a never-ending .txt file
+- https://www.wikidata.org/
 
 
 Ideas
