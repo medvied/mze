@@ -32,6 +32,11 @@ use std::collections::{
 pub struct EntityId {
     /// Container-unique entity id.
     pub id: u128,
+}
+
+pub struct EntityIdVer {
+    // see EntityId::id
+    pub id: u128,
     /// Monotonically increasing sequence. Starts from 1.
     /// [`ENTITY_VERSION_LATEST`] means "the latest version".
     ///
@@ -68,25 +73,25 @@ pub trait Container {
 
     fn search(self, query: String) -> SearchResult;
 
-    fn get_record(self, eid: EntityId) -> Record;
-    fn get_link(self, eid: EntityId) -> Link;
-    fn put_record(self, eid: EntityId, record: &Record);
-    fn put_link(self, eid: EntityId, link: &Link);
-    fn del_entity(self, eid: EntityId);
-
-    fn get_records(self, record_eids: Vec<EntityId>) -> Vec<Record>;
-    fn get_links(self, link_eids: Vec<EntityId>) -> Vec<Link>;
-
-    fn get_entity_versions(self, eid: EntityId) -> Vec<EntityId>;
-
-    fn get_all_entities_with_all_versions(self) -> Vec<EntityId>;
-
+    fn record_get(self, eidv: EntityIdVer) -> Record;
+    fn record_put(self, eid: EntityId, record: Record) -> EntityIdVer;
+    fn record_vec_get(self, vidv: Vec<EntityIdVer>) -> Vec<Record>;
+    fn record_vec_put(self, idvs_and_records: Vec<(EntityIdVer, Record)>);
     /// Returns latest versions of every record.
-    fn get_all_records(self) -> Vec<EntityId>;
-    /// See [`get_all_records`].
-    ///
-    /// [`get_all_records`]: Container::get_all_records
-    fn get_all_links(self) -> Vec<EntityId>;
+    fn record_get_all(self) -> Vec<EntityIdVer>;
+
+    fn link_get(self, eidv: EntityIdVer) -> Link;
+    fn link_put(self, eid: EntityId, link: Link) -> EntityIdVer;
+    fn link_vec_get(self, vidv: Vec<EntityIdVer>) -> Vec<Link>;
+    fn link_vec_put(self, idvs_and_links: Vec<(EntityIdVer, Link)>);
+    /// Returns latest versions of every link.
+    fn link_get_all(self) -> Vec<EntityIdVer>;
+
+    fn entity_del(self, eidv: EntityIdVer);
+    fn entity_vec_del(self, vidv: Vec<EntityIdVer>);
+    fn entity_get_versions(self, eid: EntityId) -> Vec<EntityIdVer>;
+    fn entity_vec_get_versions(self, vid: Vec<EntityId>)
+        -> Vec<Vec<EntityIdVer>>;
 }
 
 pub struct Registry {
