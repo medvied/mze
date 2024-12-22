@@ -1,2 +1,0 @@
-[global]
-index-url = ${MZE_CI_PYPI_LOCAL_URL}/simple
