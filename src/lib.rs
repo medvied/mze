@@ -74,6 +74,9 @@ pub trait Container {
     fn put_link(self, eid: EntityId, link: &Link);
     fn del_entity(self, eid: EntityId);
 
+    fn get_records(self, record_eids: Vec<EntityId>) -> Vec<Record>;
+    fn get_links(self, link_eids: Vec<EntityId>) -> Vec<Link>;
+
     fn get_all_entities_with_all_versions(self) -> Vec<EntityId>;
 
     /// Returns latest versions of every record.
