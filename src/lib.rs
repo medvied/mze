@@ -100,6 +100,20 @@ pub trait ContainerTransaction {
         &mut self,
         eidv: &EntityIdVer,
     ) -> Result<(), Box<dyn error::Error>>;
+
+    fn attrs_get(
+        &self,
+        eidv: &EntityIdVer,
+    ) -> Result<HashMap<String, String>, Box<dyn error::Error>>;
+    fn attrs_put(
+        &mut self,
+        eidv: &EntityIdVer,
+        attrs: &HashMap<String, String>,
+    ) -> Result<(), Box<dyn error::Error>>;
+    fn attrs_del(
+        &mut self,
+        eidv: &EntityIdVer,
+    ) -> Result<(), Box<dyn error::Error>>;
 }
 
 pub trait Container {

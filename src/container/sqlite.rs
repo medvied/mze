@@ -1,8 +1,5 @@
 use std::{
-    collections::{
-        // HashMap,
-        HashSet,
-    },
+    collections::{HashMap, HashSet},
     error,
 };
 
@@ -43,6 +40,14 @@ pub enum ContainerSqliteError {
     FailedToGetRecordMaxVer { sql: String, err: rusqlite::Error },
     #[error("duplicate tags in container: eidv={eidv:?} tag={tag}")]
     DuplicateTagsInContainer { eidv: EntityIdVer, tag: String },
+    #[error(
+        "duplicate attrs in container: eidv={eidv:?} key={key} value={value}"
+    )]
+    DuplicateAttrsInContainer {
+        eidv: EntityIdVer,
+        key: String,
+        value: String,
+    },
     #[error("conn.transaction() failed: err={err}")]
     BeginTransactionFailed { err: rusqlite::Error },
     #[error("tx.commit() failed: err={err}")]
@@ -315,6 +320,159 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         );
         Ok(())
     }
+
+    fn attrs_get(
+        &self,
+        eidv: &EntityIdVer,
+    ) -> Result<HashMap<String, String>, Box<dyn error::Error>> {
+        let sql = "SELECT key, value \
+             FROM attrs \
+             WHERE \
+             id_lo = ? AND id_hi = ? AND ver = ?\
+             ;";
+        let statement = self.tx.prepare(sql);
+        let mut statement = match statement {
+            Ok(ok) => ok,
+            Err(err) => {
+                return Err(Box::new(
+                    ContainerSqliteError::SqliteConnPrepareFailed {
+                        sql: sql.to_string(),
+                        err,
+                    },
+                ))
+            }
+        };
+        let rows = statement.query_map(
+            (eidv.id_lo() as i64, eidv.id_hi() as i64, eidv.ver() as i64),
+            |row| {
+                let key = row.get::<&str, String>("key");
+                let value = row.get::<&str, String>("value");
+                Ok((key, value))
+            },
+        );
+        if let Err(err) = rows {
+            return Err(Box::new(
+                ContainerSqliteError::SqliteQueryMapFailed { err },
+            ));
+        }
+        let mut attrs = HashMap::new();
+        for row in rows.unwrap() {
+            match row {
+                Ok((key, value)) => {
+                    if let Err(err) = key {
+                        return Err(Box::new(
+                            ContainerSqliteError::SqliteQueryMapFailed { err },
+                        ));
+                    }
+                    let key = key.unwrap();
+                    if let Err(err) = value {
+                        return Err(Box::new(
+                            ContainerSqliteError::SqliteQueryMapFailed { err },
+                        ));
+                    }
+                    let value = value.unwrap();
+                    // TODO find a way to not to clone the key and value
+                    // for the error message
+                    let old = attrs.insert(key.clone(), value.clone());
+                    if old.is_some() {
+                        return Err(Box::new(
+                            ContainerSqliteError::DuplicateAttrsInContainer {
+                                eidv: eidv.clone(),
+                                key,
+                                value,
+                            },
+                        ));
+                    }
+                }
+                Err(err) => {
+                    return Err(Box::new(
+                        ContainerSqliteError::ErrorRetrievingRecordData {
+                            err,
+                        },
+                    ));
+                }
+            }
+        }
+        Ok(attrs)
+    }
+
+    fn attrs_put(
+        &mut self,
+        eidv: &EntityIdVer,
+        attrs: &HashMap<String, String>,
+    ) -> Result<(), Box<dyn error::Error>> {
+        let sql = "INSERT INTO attrs(id_lo, id_hi, ver, key, value) \
+                   VALUES(?, ?, ?, ?, ?);";
+        let statement = self.tx.prepare(sql);
+        let mut statement = match statement {
+            Ok(ok) => ok,
+            Err(err) => {
+                return Err(Box::new(
+                    ContainerSqliteError::SqliteConnPrepareFailed {
+                        sql: sql.to_string(),
+                        err,
+                    },
+                ))
+            }
+        };
+        for (key, value) in attrs {
+            let nr_inserted = statement.execute((
+                eidv.id_lo() as i64,
+                eidv.id_hi() as i64,
+                eidv.ver() as i64,
+                key,
+                value,
+            ));
+            if let Err(err) = nr_inserted {
+                return Err(Box::new(
+                    ContainerSqliteError::ErrorExecutingStatement {
+                        sql: sql.to_string(),
+                        err,
+                    },
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn attrs_del(
+        &mut self,
+        eidv: &EntityIdVer,
+    ) -> Result<(), Box<dyn error::Error>> {
+        let sql = "DELETE FROM attrs WHERE \
+                   id_lo = ? AND id_hi = ? AND ver = ?\
+                   ;";
+        let statement = self.tx.prepare(sql);
+        let mut statement = match statement {
+            Ok(ok) => ok,
+            Err(err) => {
+                return Err(Box::new(
+                    ContainerSqliteError::SqliteConnPrepareFailed {
+                        sql: sql.to_string(),
+                        err,
+                    },
+                ))
+            }
+        };
+        let nr_deleted = statement.execute((
+            eidv.id_lo() as i64,
+            eidv.id_hi() as i64,
+            eidv.ver() as i64,
+        ));
+        if let Err(err) = nr_deleted {
+            return Err(Box::new(
+                ContainerSqliteError::ErrorExecutingStatement {
+                    sql: sql.to_string(),
+                    err,
+                },
+            ));
+        }
+        debug!(
+            "attrs_del(): eidv={eidv:?} nr_deleted={}",
+            nr_deleted.unwrap(),
+        );
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -323,7 +481,7 @@ mod tests {
     use crate::helpers;
 
     #[test]
-    fn smoke_2records_1link() {
+    fn smoke_tags() {
         crate::app::init();
 
         let mut container = ContainerSqlite::new("").unwrap();
@@ -345,6 +503,34 @@ mod tests {
 
         let tags1 = tx.tags_get(&eidv).unwrap();
         assert!(tags1.is_empty());
+
+        tx.commit().unwrap();
+        container.destroy().unwrap();
+    }
+
+    #[test]
+    fn smoke_attrs() {
+        crate::app::init();
+
+        let mut container = ContainerSqlite::new("").unwrap();
+        container.create().unwrap();
+        let mut test_rng = helpers::TestRng::new(1);
+        let eidv = helpers::random_entity_id_ver(&mut test_rng);
+        let mut tx = container.begin_transaction().unwrap();
+
+        let attrs1 = tx.attrs_get(&eidv).unwrap();
+        assert!(attrs1.is_empty());
+
+        let attrs = helpers::random_attrs(&mut test_rng);
+        tx.attrs_put(&eidv, &attrs).unwrap();
+
+        let attrs1 = tx.attrs_get(&eidv).unwrap();
+        assert_eq!(attrs1, attrs);
+
+        tx.attrs_del(&eidv).unwrap();
+
+        let attrs1 = tx.attrs_get(&eidv).unwrap();
+        assert!(attrs1.is_empty());
 
         tx.commit().unwrap();
         container.destroy().unwrap();
