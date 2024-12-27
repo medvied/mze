@@ -117,8 +117,7 @@ pub trait ContainerTransaction {
 }
 
 pub trait Container {
-    /// Transaction
-    type Tx<'a>
+    type Transaction<'a>
     where
         Self: 'a;
 
@@ -129,7 +128,7 @@ pub trait Container {
 
     fn begin_transaction(
         &mut self,
-    ) -> Result<Self::Tx<'_>, Box<dyn error::Error>>;
+    ) -> Result<Self::Transaction<'_>, Box<dyn error::Error>>;
 
     fn search(&self, query: String) -> SearchResult;
 }

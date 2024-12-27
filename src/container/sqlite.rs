@@ -100,7 +100,7 @@ impl ContainerSqlite {
 }
 
 impl Container for ContainerSqlite {
-    type Tx<'a> = ContainerSqliteTransaction<'a>;
+    type Transaction<'a> = ContainerSqliteTransaction<'a>;
 
     fn create(&self) -> Result<(), Box<dyn error::Error>> {
         let statements: &[&str] = &[
@@ -146,7 +146,7 @@ impl Container for ContainerSqlite {
 
     fn begin_transaction(
         &mut self,
-    ) -> Result<Self::Tx<'_>, Box<dyn error::Error>> {
+    ) -> Result<Self::Transaction<'_>, Box<dyn error::Error>> {
         let tx = self.conn.transaction();
         match tx {
             Ok(tx) => Ok(ContainerSqliteTransaction { tx }),
