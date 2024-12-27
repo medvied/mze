@@ -24,33 +24,49 @@
  * - type: record | link
  */
 
-use std::collections::{
-    HashMap,
-    HashSet,
+// to make thread::current().id().as_u64() work
+#![feature(thread_id_value)]
+
+pub mod app;
+pub mod container;
+// rusrc adds the following message if the name is test or test_helpers
+//
+// help: if this is a test module, consider adding a `#[cfg(test)]`
+// to the containing module
+pub mod helpers;
+
+use std::{
+    collections::{HashMap, HashSet},
+    error,
 };
 
+#[derive(Debug)]
 pub struct EntityId {
     /// Container-unique entity id.
     pub id: u128,
 }
 
+#[derive(Clone, Debug)]
 pub struct EntityIdVer {
     // see EntityId::id
     pub id: u128,
+    /// Version.
     /// Monotonically increasing sequence. Starts from 1.
     /// [`ENTITY_VERSION_LATEST`] means "the latest version".
     ///
     /// [`ENTITY_VERSION_LATEST`]: ENTITY_VERSION_LATEST
-    pub version: u64,
+    pub ver: u64,
 }
 
 pub const ENTITY_VERSION_LATEST: u64 = 0;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct Entity {
     pub tags: HashSet<String>,
     pub attrs: HashMap<String, String>,
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct Record {
     pub entity: Entity,
     pub data: Option<Vec<u8>>,
@@ -67,37 +83,71 @@ pub struct SearchResult {
     pub links: Vec<EntityId>,
 }
 
+pub trait ContainerTransaction {
+    fn commit(self) -> Result<(), Box<dyn error::Error>>;
+    fn rollback(self) -> Result<(), Box<dyn error::Error>>;
+
+    fn tags_get(
+        &self,
+        eidv: &EntityIdVer,
+    ) -> Result<HashSet<String>, Box<dyn error::Error>>;
+    fn tags_put(
+        &mut self,
+        eidv: &EntityIdVer,
+        tags: &HashSet<String>,
+    ) -> Result<(), Box<dyn error::Error>>;
+    fn tags_del(
+        &mut self,
+        eidv: &EntityIdVer,
+    ) -> Result<(), Box<dyn error::Error>>;
+}
+
 pub trait Container {
-    fn load(self);
-    fn save(self);
+    /// Transaction
+    type Tx<'a>
+    where
+        Self: 'a;
 
-    fn search(self, query: String) -> SearchResult;
+    fn create(&self) -> Result<(), Box<dyn error::Error>>;
+    fn destroy(&self) -> Result<(), Box<dyn error::Error>>;
+    fn load(&self, uri: String);
+    fn save(&self, uri: String);
 
-    fn record_get(self, eidv: EntityIdVer) -> Record;
-    fn record_put(self, eid: EntityId, record: Record) -> EntityIdVer;
-    fn record_vec_get(self, vidv: Vec<EntityIdVer>) -> Vec<Record>;
-    fn record_vec_put(self, idvs_and_records: Vec<(EntityIdVer, Record)>);
-    /// Returns latest versions of every record.
-    fn record_get_all(self) -> Vec<EntityIdVer>;
+    fn begin_transaction(
+        &mut self,
+    ) -> Result<Self::Tx<'_>, Box<dyn error::Error>>;
 
-    fn link_get(self, eidv: EntityIdVer) -> Link;
-    fn link_put(self, eid: EntityId, link: Link) -> EntityIdVer;
-    fn link_vec_get(self, vidv: Vec<EntityIdVer>) -> Vec<Link>;
-    fn link_vec_put(self, idvs_and_links: Vec<(EntityIdVer, Link)>);
-    /// Returns latest versions of every link.
-    fn link_get_all(self) -> Vec<EntityIdVer>;
-
-    fn entity_del(self, eidv: EntityIdVer);
-    fn entity_vec_del(self, vidv: Vec<EntityIdVer>);
-    fn entity_get_versions(self, eid: EntityId) -> Vec<EntityIdVer>;
-    fn entity_vec_get_versions(self, vid: Vec<EntityId>)
-        -> Vec<Vec<EntityIdVer>>;
+    fn search(&self, query: String) -> SearchResult;
 }
 
 pub struct Registry {
-    pub containers: Vec<Box<dyn Container>>,
+    // XXX pub containers: Vec<Box<dyn Container>>,
 }
 
 pub trait Renderer {
     fn run(self);
+}
+
+impl EntityId {
+    pub fn id_lo(&self) -> u64 {
+        self.id as u64
+    }
+
+    pub fn id_hi(&self) -> u64 {
+        (self.id >> 64) as u64
+    }
+}
+
+impl EntityIdVer {
+    pub fn id_lo(&self) -> u64 {
+        self.id as u64
+    }
+
+    pub fn id_hi(&self) -> u64 {
+        (self.id >> 64) as u64
+    }
+
+    pub fn ver(&self) -> u64 {
+        self.ver
+    }
 }
