@@ -61,19 +61,19 @@ pub struct EntityIdVer {
 pub const ENTITY_VERSION_LATEST: u64 = 0;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct Entity {
+pub struct TagsAndAttrs {
     pub tags: HashSet<String>,
     pub attrs: HashMap<String, String>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Record {
-    pub entity: Entity,
+    pub ta: TagsAndAttrs,
     pub data: Option<Vec<u8>>,
 }
 
 pub struct Link {
-    pub entity: Entity,
+    pub ta: TagsAndAttrs,
     pub from: Vec<EntityId>,
     pub to: Vec<EntityId>,
 }

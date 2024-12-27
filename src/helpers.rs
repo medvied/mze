@@ -20,7 +20,7 @@ use rand::{self, distributions::DistString, Rng};
 use rand_core::{RngCore, SeedableRng};
 use rand_pcg;
 
-use crate::{Entity, EntityId, EntityIdVer, Record};
+use crate::{EntityId, EntityIdVer, Record, TagsAndAttrs};
 
 pub struct TestRng {
     rng: rand_pcg::Pcg64Mcg,
@@ -75,8 +75,8 @@ pub fn random_attrs(test_rng: &mut TestRng) -> HashMap<String, String> {
     .collect()
 }
 
-pub fn random_entity(test_rng: &mut TestRng) -> Entity {
-    Entity {
+pub fn random_tags_and_attrs(test_rng: &mut TestRng) -> TagsAndAttrs {
+    TagsAndAttrs {
         tags: random_tags(test_rng),
         attrs: random_attrs(test_rng),
     }
@@ -84,7 +84,7 @@ pub fn random_entity(test_rng: &mut TestRng) -> Entity {
 
 pub fn random_record(test_rng: &mut TestRng) -> Record {
     Record {
-        entity: random_entity(test_rng),
+        ta: random_tags_and_attrs(test_rng),
         data: if test_rng.rand_range(8) == 0 {
             None
         } else {
