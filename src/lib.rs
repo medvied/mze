@@ -22,6 +22,8 @@
  * Reserved attributes
  *
  * - type: record | link
+ *
+ * TODO log debug messages and errors consistently
  */
 
 // to make thread::current().id().as_u64() work
@@ -40,13 +42,13 @@ use std::{
     error,
 };
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EntityId {
     /// Container-unique entity id.
     pub id: u128,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EntityIdVer {
     // see EntityId::id
     pub id: u128,
@@ -114,6 +116,55 @@ pub trait ContainerTransaction {
         &mut self,
         eidv: &EntityIdVer,
     ) -> Result<(), Box<dyn error::Error>>;
+
+    fn record_get(
+        &self,
+        eidv: &EntityIdVer,
+    ) -> Result<Option<Record>, Box<dyn error::Error>>;
+    fn record_put(
+        &mut self,
+        eid: &EntityId,
+        record: &Record,
+    ) -> Result<EntityIdVer, Box<dyn error::Error>>;
+    fn record_del(
+        &mut self,
+        eidv: &EntityIdVer,
+    ) -> Result<(), Box<dyn error::Error>>;
+    /// Returns latest versions of every record.
+    fn record_get_all_ids(
+        &self,
+    ) -> Result<Vec<EntityId>, Box<dyn error::Error>>;
+    fn record_get_ver_latest(
+        &self,
+        eid: &EntityId,
+    ) -> Result<Option<EntityIdVer>, Box<dyn error::Error>>;
+
+    fn tags_and_attrs_get(
+        &self,
+        eidv: &EntityIdVer,
+    ) -> Result<TagsAndAttrs, Box<dyn error::Error>> {
+        Ok(TagsAndAttrs {
+            tags: self.tags_get(eidv)?,
+            attrs: self.attrs_get(eidv)?,
+        })
+    }
+
+    fn tags_and_attrs_put(
+        &mut self,
+        eidv: &EntityIdVer,
+        ta: &TagsAndAttrs,
+    ) -> Result<(), Box<dyn error::Error>> {
+        self.tags_put(eidv, &ta.tags)?;
+        self.attrs_put(eidv, &ta.attrs)
+    }
+
+    fn tags_and_attrs_del(
+        &mut self,
+        eidv: &EntityIdVer,
+    ) -> Result<(), Box<dyn error::Error>> {
+        self.tags_del(eidv)?;
+        self.attrs_del(eidv)
+    }
 }
 
 pub trait Container {
@@ -142,6 +193,12 @@ pub trait Renderer {
 }
 
 impl EntityId {
+    pub fn new(id_lo: u64, id_hi: u64) -> EntityId {
+        EntityId {
+            id: ((id_hi as u128) << 64) + (id_lo as u128),
+        }
+    }
+
     pub fn id_lo(&self) -> u64 {
         self.id as u64
     }

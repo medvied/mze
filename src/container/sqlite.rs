@@ -10,9 +10,7 @@ use rusqlite;
 use thiserror::Error;
 
 use crate::{
-    Container,
-    ContainerTransaction,
-    EntityIdVer,
+    Container, ContainerTransaction, EntityId, EntityIdVer, Record,
     SearchResult,
 };
 
@@ -473,6 +471,281 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         );
         Ok(())
     }
+
+    fn record_get(
+        &self,
+        eidv: &EntityIdVer,
+    ) -> Result<Option<Record>, Box<dyn error::Error>> {
+        let sql = "SELECT data \
+             FROM records \
+             WHERE \
+             id_lo = ? AND id_hi = ? AND ver = ?\
+             ;";
+        let statement = self.tx.prepare(sql);
+        let mut statement = match statement {
+            Ok(ok) => ok,
+            Err(err) => {
+                return Err(Box::new(
+                    ContainerSqliteError::SqliteConnPrepareFailed {
+                        sql: sql.to_string(),
+                        err,
+                    },
+                ))
+            }
+        };
+        let rows = statement.query_map(
+            (eidv.id_lo() as i64, eidv.id_hi() as i64, eidv.ver() as i64),
+            |row| row.get::<&str, Vec<u8>>("data"),
+        );
+        if let Err(err) = rows {
+            return Err(Box::new(
+                ContainerSqliteError::SqliteQueryMapFailed { err },
+            ));
+        }
+        let rows: Vec<_> = rows.unwrap().collect();
+        if rows.len() > 1 {
+            return Err(Box::new(
+                ContainerSqliteError::TooManyRowsForARecord {
+                    eidv: eidv.clone(),
+                },
+            ));
+        }
+        if rows.is_empty() {
+            return Ok(None);
+        }
+        let first = rows.into_iter().nth(0).unwrap();
+        let data = match first {
+            Ok(ok) => ok,
+            Err(err) => {
+                return Err(Box::new(
+                    ContainerSqliteError::ErrorRetrievingRecordData { err },
+                ));
+            }
+        };
+        let record = Record {
+            data: Some(data),
+            ta: self.tags_and_attrs_get(eidv)?,
+        };
+        Ok(Some(record))
+    }
+
+    fn record_put(
+        &mut self,
+        eid: &EntityId,
+        record: &Record,
+    ) -> Result<EntityIdVer, Box<dyn error::Error>> {
+        let eidv = self.record_get_ver_latest(eid)?;
+        let eidv = EntityIdVer {
+            id: eid.id,
+            ver: match eidv {
+                Some(eidv) => eidv.ver + 1,
+                None => 1,
+            },
+        };
+        self.tags_and_attrs_put(&eidv, &record.ta)?;
+        let sql = "INSERT INTO records(id_lo, id_hi, ver, data) \
+                   VALUES(?, ?, ?, ?);";
+        let statement = self.tx.prepare(sql);
+        let mut statement = match statement {
+            Ok(ok) => ok,
+            Err(err) => {
+                return Err(Box::new(
+                    ContainerSqliteError::SqliteConnPrepareFailed {
+                        sql: sql.to_string(),
+                        err,
+                    },
+                ))
+            }
+        };
+        let nr_inserted = statement.execute((
+            eidv.id_lo() as i64,
+            eidv.id_hi() as i64,
+            eidv.ver() as i64,
+            &record.data,
+        ));
+        if let Err(err) = nr_inserted {
+            return Err(Box::new(
+                ContainerSqliteError::ErrorExecutingStatement {
+                    sql: sql.to_string(),
+                    err,
+                },
+            ));
+        }
+        let nr_inserted = nr_inserted.unwrap();
+        if nr_inserted != 1 {
+            return Err(Box::new(
+                ContainerSqliteError::FailedToInsert1Entry {
+                    sql: sql.to_string(),
+                    nr_inserted,
+                },
+            ));
+        }
+        Ok(eidv)
+    }
+
+    fn record_del(
+        &mut self,
+        eidv: &EntityIdVer,
+    ) -> Result<(), Box<dyn error::Error>> {
+        self.tags_and_attrs_del(eidv)?;
+        let sql = "DELETE FROM records WHERE \
+                   id_lo = ? AND id_hi = ? AND ver = ?\
+                   ;";
+        let statement = self.tx.prepare(sql);
+        let mut statement = match statement {
+            Ok(ok) => ok,
+            Err(err) => {
+                return Err(Box::new(
+                    ContainerSqliteError::SqliteConnPrepareFailed {
+                        sql: sql.to_string(),
+                        err,
+                    },
+                ))
+            }
+        };
+        let nr_deleted = statement.execute((
+            eidv.id_lo() as i64,
+            eidv.id_hi() as i64,
+            eidv.ver() as i64,
+        ));
+        if let Err(err) = nr_deleted {
+            return Err(Box::new(
+                ContainerSqliteError::ErrorExecutingStatement {
+                    sql: sql.to_string(),
+                    err,
+                },
+            ));
+        }
+        debug!(
+            "records_del(): eidv={eidv:?} nr_deleted={}",
+            nr_deleted.unwrap()
+        );
+        Ok(())
+    }
+
+    fn record_get_all_ids(
+        &self,
+    ) -> Result<Vec<EntityId>, Box<dyn error::Error>> {
+        let sql = "SELECT DISTINCT id_hi, id_lo \
+                   FROM records;";
+        debug!("tx.prepare(): sql={sql}");
+        let statement = self.tx.prepare(sql);
+        if let Err(err) = statement {
+            return Err(Box::new(
+                ContainerSqliteError::SqliteConnPrepareFailed {
+                    sql: sql.to_string(),
+                    err,
+                },
+            ));
+        }
+        let mut statement = statement.unwrap();
+        let rows = statement.query_map((), |row| {
+            let id_lo = row.get::<&str, i64>("id_lo");
+            let id_hi = row.get::<&str, i64>("id_hi");
+            Ok((id_lo, id_hi))
+        });
+        if let Err(err) = rows {
+            debug!("err={err}");
+            return Err(Box::new(
+                ContainerSqliteError::SqliteQueryMapFailed { err },
+            ));
+        }
+        let mut vids = Vec::<EntityId>::new();
+        for row in rows.unwrap() {
+            match row {
+                Ok((id_lo, id_hi)) => {
+                    if let Err(err) = id_lo {
+                        return Err(Box::new(
+                            ContainerSqliteError::SqliteQueryMapFailed { err },
+                        ));
+                    }
+                    let id_lo = id_lo.unwrap() as u64;
+                    if let Err(err) = id_hi {
+                        return Err(Box::new(
+                            ContainerSqliteError::SqliteQueryMapFailed { err },
+                        ));
+                    }
+                    let id_hi = id_hi.unwrap() as u64;
+                    vids.push(EntityId::new(id_lo, id_hi));
+                }
+                Err(err) => {
+                    return Err(Box::new(
+                        ContainerSqliteError::ErrorRetrievingRecordData {
+                            err,
+                        },
+                    ));
+                }
+            }
+        }
+        Ok(vids)
+    }
+
+    fn record_get_ver_latest(
+        &self,
+        eid: &EntityId,
+    ) -> Result<Option<EntityIdVer>, Box<dyn error::Error>> {
+        let sql = "SELECT max(ver) \
+             FROM records \
+             WHERE \
+             id_lo = ? AND id_hi = ?\
+             ;";
+        debug!("tx.prepare(): sql={sql}");
+        let statement = self.tx.prepare(sql);
+        if let Err(err) = statement {
+            return Err(Box::new(
+                ContainerSqliteError::SqliteConnPrepareFailed {
+                    sql: sql.to_string(),
+                    err,
+                },
+            ));
+        }
+        let mut statement = statement.unwrap();
+        let rows = statement.query_map(
+            (eid.id_lo() as i64, eid.id_hi() as i64),
+            |row| {
+                let value = row.get_ref(0);
+                match value {
+                    Ok(v) => match Into::<rusqlite::types::Value>::into(v) {
+                        rusqlite::types::Value::Null => Ok(None),
+                        rusqlite::types::Value::Integer(i) => Ok(Some(i)),
+                        _ => panic!(),
+                    },
+                    Err(err) => Err(err),
+                }
+            },
+        );
+        if let Err(err) = rows {
+            debug!("err={err}");
+            return Err(Box::new(
+                ContainerSqliteError::SqliteQueryMapFailed { err },
+            ));
+        }
+        let rows: Vec<_> = rows.unwrap().collect();
+        assert!(rows.len() <= 1);
+        if rows.is_empty() {
+            Ok(None)
+        } else {
+            let first = rows.into_iter().nth(0);
+            match first {
+                Some(row) => match row {
+                    Ok(v) => match v {
+                        Some(ver) => Ok(Some(EntityIdVer {
+                            id: eid.id,
+                            ver: ver as u64,
+                        })),
+                        None => Ok(None),
+                    },
+                    Err(err) => Err(Box::new(
+                        ContainerSqliteError::FailedToGetRecordMaxVer {
+                            sql: sql.to_string(),
+                            err,
+                        },
+                    )),
+                },
+                None => panic!(),
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -531,6 +804,52 @@ mod tests {
 
         let attrs1 = tx.attrs_get(&eidv).unwrap();
         assert!(attrs1.is_empty());
+
+        tx.commit().unwrap();
+        container.destroy().unwrap();
+    }
+
+    #[test]
+    fn smoke_record() {
+        crate::app::init();
+
+        let mut container = ContainerSqlite::new("").unwrap();
+        container.create().unwrap();
+        let mut test_rng = helpers::TestRng::new(1);
+        let eid = helpers::random_entity_id(&mut test_rng);
+        let mut tx = container.begin_transaction().unwrap();
+
+        let eidv = tx.record_get_ver_latest(&eid).unwrap();
+        assert!(eidv.is_none());
+
+        let all_ids = tx.record_get_all_ids().unwrap();
+        assert!(all_ids.is_empty());
+
+        let record = helpers::random_record(&mut test_rng);
+        let eidv = tx.record_put(&eid, &record).unwrap();
+        assert_eq!(eid.id, eidv.id);
+        assert_eq!(eidv.ver, 1);
+
+        let record1 = tx.record_get(&eidv).unwrap().unwrap();
+        assert_eq!(record1, record);
+
+        let eidv1 = tx.record_get_ver_latest(&eid).unwrap().unwrap();
+        assert_eq!(eidv1, eidv);
+
+        let all_ids = tx.record_get_all_ids().unwrap();
+        assert_eq!(all_ids.len(), 1);
+        assert_eq!(all_ids[0], eid);
+
+        tx.record_del(&eidv).unwrap();
+
+        let record1 = tx.record_get(&eidv).unwrap();
+        assert!(record1.is_none());
+
+        let eidv = tx.record_get_ver_latest(&eid).unwrap();
+        assert!(eidv.is_none());
+
+        let all_ids = tx.record_get_all_ids().unwrap();
+        assert!(all_ids.is_empty());
 
         tx.commit().unwrap();
         container.destroy().unwrap();
