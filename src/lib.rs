@@ -79,8 +79,8 @@ pub struct Link {
 }
 
 pub struct SearchResult {
-    pub records: Vec<EntityId>,
-    pub links: Vec<EntityId>,
+    pub records: Vec<EntityIdVer>,
+    pub links: Vec<EntityIdVer>,
 }
 
 pub trait ContainerTransaction {
