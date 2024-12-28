@@ -23,6 +23,35 @@
  *
  * - type: record | link
  *
+ * Design highlights
+ *
+ * - record, link and container are entities
+ * - link is directional
+ * - link to and from are unordered sets
+ * - there may be more than 1 link between 2 records
+ * - tags: unordered set of UTF-8 strings
+ * - attrs: unordered key:value map, both key and value are UTF8 strings
+ * - version
+ *
+ *   - starts from 1
+ *   - monotonically increasing sequence
+ *   - for a new record/link/container: assigned by container, max(ver) + 1
+ *   - every entity version has its own set of tags and attributes
+ *
+ * - types for:
+ *
+ *   - tags
+ *   - attributes (example: time format)
+ *   - links (example: one image is a thumbnail version of another)
+ *   - records (example: outline is a record that has a tree-like structure that reference other
+ *     records)
+ *
+ *  - container may contain records, links and other containers
+ *
+ *  Test data
+ *
+ *  - Linux kernel tree: files, functions, call graph
+ *
  * TODO log debug messages and errors consistently
  */
 
