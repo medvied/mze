@@ -523,8 +523,8 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             }
         };
         let record = Record {
-            data: Some(data),
             ta: self.tags_and_attrs_get(eidv)?,
+            data: Some(data),
         };
         Ok(Some(record))
     }
