@@ -129,7 +129,7 @@ pub trait ContainerTransaction {
     fn record_del(
         &mut self,
         eidv: &EntityIdVer,
-    ) -> Result<(), Box<dyn error::Error>>;
+    ) -> Result<bool, Box<dyn error::Error>>;
     /// Returns latest versions of every record.
     fn record_get_all_ids(
         &self,

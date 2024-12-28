@@ -586,7 +586,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
     fn record_del(
         &mut self,
         eidv: &EntityIdVer,
-    ) -> Result<(), Box<dyn error::Error>> {
+    ) -> Result<bool, Box<dyn error::Error>> {
         self.tags_and_attrs_del(eidv)?;
         let sql = "DELETE FROM records WHERE \
                    id_lo = ? AND id_hi = ? AND ver = ?\
@@ -616,11 +616,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 },
             ));
         }
-        debug!(
-            "records_del(): eidv={eidv:?} nr_deleted={}",
-            nr_deleted.unwrap()
-        );
-        Ok(())
+        Ok(nr_deleted.unwrap() > 0)
     }
 
     fn record_get_all_ids(
@@ -840,7 +836,8 @@ mod tests {
         assert_eq!(all_ids.len(), 1);
         assert_eq!(all_ids[0], eid);
 
-        tx.record_del(&eidv).unwrap();
+        let deleted = tx.record_del(&eidv).unwrap();
+        assert!(deleted);
 
         let record1 = tx.record_get(&eidv).unwrap();
         assert!(record1.is_none());
