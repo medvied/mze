@@ -54,7 +54,7 @@ pub struct EntityIdVer {
     pub id: u128,
     /// Version.
     /// Monotonically increasing sequence. Starts from 1.
-    /// [`ENTITY_VERSION_LATEST`] means "the latest version".
+    /// [`ENTITY_VERSION_LATEST`] (defined as 0) means "the latest version".
     ///
     /// [`ENTITY_VERSION_LATEST`]: ENTITY_VERSION_LATEST
     pub ver: u64,
@@ -74,10 +74,11 @@ pub struct Record {
     pub data: Option<Vec<u8>>,
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct Link {
     pub ta: TagsAndAttrs,
-    pub from: Vec<EntityId>,
-    pub to: Vec<EntityId>,
+    pub from: Vec<EntityIdVer>,
+    pub to: Vec<EntityIdVer>,
 }
 
 pub struct SearchResult {
@@ -85,6 +86,8 @@ pub struct SearchResult {
     pub links: Vec<EntityIdVer>,
 }
 
+/// TODO support ENTITY_VERSION_LATEST in EntityIdVer
+/// TODO consider Vec<_> instead of HashSet<_> and vice versa
 pub trait ContainerTransaction {
     fn commit(self) -> Result<(), Box<dyn error::Error>>;
     fn rollback(self) -> Result<(), Box<dyn error::Error>>;
@@ -135,6 +138,26 @@ pub trait ContainerTransaction {
         &self,
     ) -> Result<Vec<EntityId>, Box<dyn error::Error>>;
     fn record_get_ver_latest(
+        &self,
+        eid: &EntityId,
+    ) -> Result<Option<EntityIdVer>, Box<dyn error::Error>>;
+
+    fn link_get(
+        &self,
+        eidv: &EntityIdVer,
+    ) -> Result<Option<Link>, Box<dyn error::Error>>;
+    fn link_put(
+        &mut self,
+        eid: &EntityId,
+        link: &Link,
+    ) -> Result<EntityIdVer, Box<dyn error::Error>>;
+    fn link_del(
+        &mut self,
+        eidv: &EntityIdVer,
+    ) -> Result<bool, Box<dyn error::Error>>;
+    fn link_get_all_ids(&self)
+        -> Result<Vec<EntityId>, Box<dyn error::Error>>;
+    fn link_get_ver_latest(
         &self,
         eid: &EntityId,
     ) -> Result<Option<EntityIdVer>, Box<dyn error::Error>>;
@@ -209,6 +232,13 @@ impl EntityId {
 }
 
 impl EntityIdVer {
+    pub fn new(id_lo: u64, id_hi: u64, ver: u64) -> Self {
+        Self {
+            id: ((id_hi as u128) << 64) + (id_lo as u128),
+            ver,
+        }
+    }
+
     pub fn id_lo(&self) -> u64 {
         self.id as u64
     }

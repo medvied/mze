@@ -10,7 +10,7 @@ use rusqlite;
 use thiserror::Error;
 
 use crate::{
-    Container, ContainerTransaction, EntityId, EntityIdVer, Record,
+    Container, ContainerTransaction, EntityId, EntityIdVer, Link, Record,
     SearchResult,
 };
 
@@ -100,6 +100,7 @@ impl ContainerSqlite {
 impl Container for ContainerSqlite {
     type Transaction<'a> = ContainerSqliteTransaction<'a>;
 
+    /// TODO use NOT NULL here and check for NULL
     fn create(&self) -> Result<(), Box<dyn error::Error>> {
         let statements: &[&str] = &[
             "CREATE TABLE records(\
@@ -121,12 +122,22 @@ impl Container for ContainerSqlite {
                 key TEXT, \
                 value TEXT\
             ) STRICT;",
+            "CREATE TABLE links(\
+                id_lo INTEGER, \
+                id_hi INTEGER, \
+                ver INTEGER, \
+                is_to INTEGER, \
+                r_id_lo INTEGER, \
+                r_id_hi INTEGER, \
+                r_ver INTEGER\
+            ) STRICT;",
         ];
         self.statements_execute(statements)
     }
 
     fn destroy(&self) -> Result<(), Box<dyn error::Error>> {
         let statements: &[&str] = &[
+            "DROP TABLE links;",
             "DROP TABLE attrs;",
             "DROP TABLE tags;",
             "DROP TABLE records;",
@@ -742,6 +753,298 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             }
         }
     }
+
+    fn link_get(
+        &self,
+        eidv: &EntityIdVer,
+    ) -> Result<Option<Link>, Box<dyn error::Error>> {
+        let sql = "SELECT is_to, r_id_lo, r_id_hi, r_ver \
+             FROM links \
+             WHERE \
+             id_lo = ? AND id_hi = ? AND ver = ?\
+             ;";
+        let statement = self.tx.prepare(sql);
+        let mut statement = match statement {
+            Ok(ok) => ok,
+            Err(err) => {
+                return Err(Box::new(
+                    ContainerSqliteError::SqliteConnPrepareFailed {
+                        sql: sql.to_string(),
+                        err,
+                    },
+                ))
+            }
+        };
+        let rows = statement.query_map(
+            (eidv.id_lo() as i64, eidv.id_hi() as i64, eidv.ver() as i64),
+            |row| {
+                Ok((
+                    row.get::<&str, bool>("is_to")?,
+                    row.get::<&str, i64>("r_id_lo")?,
+                    row.get::<&str, i64>("r_id_hi")?,
+                    row.get::<&str, i64>("r_ver")?,
+                ))
+            },
+        );
+        if let Err(err) = rows {
+            return Err(Box::new(
+                ContainerSqliteError::SqliteQueryMapFailed { err },
+            ));
+        }
+        let mut from = Vec::new();
+        let mut to = Vec::new();
+        for row in rows.unwrap() {
+            match row {
+                Ok((is_to, r_id_lo, r_id_hi, r_ver)) => {
+                    let r_eidv = EntityIdVer::new(
+                        r_id_lo as u64,
+                        r_id_hi as u64,
+                        r_ver as u64,
+                    );
+                    if is_to {
+                        to.push(r_eidv);
+                    } else {
+                        from.push(r_eidv);
+                    }
+                }
+                Err(err) => {
+                    return Err(Box::new(
+                        ContainerSqliteError::ErrorRetrievingRecordData {
+                            err,
+                        },
+                    ));
+                }
+            }
+        }
+        let link = Link {
+            ta: self.tags_and_attrs_get(eidv)?,
+            from,
+            to,
+        };
+        Ok(Some(link))
+    }
+
+    fn link_put(
+        &mut self,
+        eid: &EntityId,
+        link: &Link,
+    ) -> Result<EntityIdVer, Box<dyn error::Error>> {
+        let eidv = self.link_get_ver_latest(eid)?;
+        let eidv = EntityIdVer {
+            id: eid.id,
+            ver: match eidv {
+                Some(eidv) => eidv.ver + 1,
+                None => 1,
+            },
+        };
+        self.tags_and_attrs_put(&eidv, &link.ta)?;
+        let sql = "INSERT INTO links(id_lo, id_hi, ver, \
+                                     is_to, r_id_lo, r_id_hi, r_ver) \
+                   VALUES(?, ?, ?, ?, ?, ?, ?);";
+        let statement = self.tx.prepare(sql);
+        let mut statement = match statement {
+            Ok(ok) => ok,
+            Err(err) => {
+                return Err(Box::new(
+                    ContainerSqliteError::SqliteConnPrepareFailed {
+                        sql: sql.to_string(),
+                        err,
+                    },
+                ))
+            }
+        };
+        for (is_to, vec_eidv) in [(false, &link.from), (true, &link.to)] {
+            for r_eidv in vec_eidv {
+                let nr_inserted = statement.execute((
+                    eidv.id_lo() as i64,
+                    eidv.id_hi() as i64,
+                    eidv.ver() as i64,
+                    is_to,
+                    r_eidv.id_lo() as i64,
+                    r_eidv.id_hi() as i64,
+                    r_eidv.ver() as i64,
+                ));
+                if let Err(err) = nr_inserted {
+                    return Err(Box::new(
+                        ContainerSqliteError::ErrorExecutingStatement {
+                            sql: sql.to_string(),
+                            err,
+                        },
+                    ));
+                }
+                let nr_inserted = nr_inserted.unwrap();
+                if nr_inserted != 1 {
+                    return Err(Box::new(
+                        ContainerSqliteError::FailedToInsert1Entry {
+                            sql: sql.to_string(),
+                            nr_inserted,
+                        },
+                    ));
+                }
+            }
+        }
+        Ok(eidv)
+    }
+
+    fn link_del(
+        &mut self,
+        eidv: &EntityIdVer,
+    ) -> Result<bool, Box<dyn error::Error>> {
+        self.tags_and_attrs_del(eidv)?;
+        let sql = "DELETE FROM links WHERE \
+                   id_lo = ? AND id_hi = ? AND ver = ?\
+                   ;";
+        let statement = self.tx.prepare(sql);
+        let mut statement = match statement {
+            Ok(ok) => ok,
+            Err(err) => {
+                return Err(Box::new(
+                    ContainerSqliteError::SqliteConnPrepareFailed {
+                        sql: sql.to_string(),
+                        err,
+                    },
+                ))
+            }
+        };
+        let nr_deleted = statement.execute((
+            eidv.id_lo() as i64,
+            eidv.id_hi() as i64,
+            eidv.ver() as i64,
+        ));
+        if let Err(err) = nr_deleted {
+            return Err(Box::new(
+                ContainerSqliteError::ErrorExecutingStatement {
+                    sql: sql.to_string(),
+                    err,
+                },
+            ));
+        }
+        Ok(nr_deleted.unwrap() > 0)
+    }
+
+    fn link_get_all_ids(
+        &self,
+    ) -> Result<Vec<EntityId>, Box<dyn error::Error>> {
+        let sql = "SELECT DISTINCT id_hi, id_lo \
+                   FROM links;";
+        debug!("tx.prepare(): sql={sql}");
+        let statement = self.tx.prepare(sql);
+        if let Err(err) = statement {
+            return Err(Box::new(
+                ContainerSqliteError::SqliteConnPrepareFailed {
+                    sql: sql.to_string(),
+                    err,
+                },
+            ));
+        }
+        let mut statement = statement.unwrap();
+        let rows = statement.query_map((), |row| {
+            let id_lo = row.get::<&str, i64>("id_lo");
+            let id_hi = row.get::<&str, i64>("id_hi");
+            Ok((id_lo, id_hi))
+        });
+        if let Err(err) = rows {
+            debug!("err={err}");
+            return Err(Box::new(
+                ContainerSqliteError::SqliteQueryMapFailed { err },
+            ));
+        }
+        let mut vids = Vec::<EntityId>::new();
+        for row in rows.unwrap() {
+            match row {
+                Ok((id_lo, id_hi)) => {
+                    if let Err(err) = id_lo {
+                        return Err(Box::new(
+                            ContainerSqliteError::SqliteQueryMapFailed { err },
+                        ));
+                    }
+                    let id_lo = id_lo.unwrap() as u64;
+                    if let Err(err) = id_hi {
+                        return Err(Box::new(
+                            ContainerSqliteError::SqliteQueryMapFailed { err },
+                        ));
+                    }
+                    let id_hi = id_hi.unwrap() as u64;
+                    vids.push(EntityId::new(id_lo, id_hi));
+                }
+                Err(err) => {
+                    return Err(Box::new(
+                        ContainerSqliteError::ErrorRetrievingRecordData {
+                            err,
+                        },
+                    ));
+                }
+            }
+        }
+        Ok(vids)
+    }
+
+    fn link_get_ver_latest(
+        &self,
+        eid: &EntityId,
+    ) -> Result<Option<EntityIdVer>, Box<dyn error::Error>> {
+        let sql = "SELECT max(ver) \
+             FROM links \
+             WHERE \
+             id_lo = ? AND id_hi = ?\
+             ;";
+        debug!("tx.prepare(): sql={sql}");
+        let statement = self.tx.prepare(sql);
+        if let Err(err) = statement {
+            return Err(Box::new(
+                ContainerSqliteError::SqliteConnPrepareFailed {
+                    sql: sql.to_string(),
+                    err,
+                },
+            ));
+        }
+        let mut statement = statement.unwrap();
+        let rows = statement.query_map(
+            (eid.id_lo() as i64, eid.id_hi() as i64),
+            |row| {
+                let value = row.get_ref(0);
+                match value {
+                    Ok(v) => match Into::<rusqlite::types::Value>::into(v) {
+                        rusqlite::types::Value::Null => Ok(None),
+                        rusqlite::types::Value::Integer(i) => Ok(Some(i)),
+                        _ => panic!(),
+                    },
+                    Err(err) => Err(err),
+                }
+            },
+        );
+        if let Err(err) = rows {
+            debug!("err={err}");
+            return Err(Box::new(
+                ContainerSqliteError::SqliteQueryMapFailed { err },
+            ));
+        }
+        let rows: Vec<_> = rows.unwrap().collect();
+        assert!(rows.len() <= 1);
+        if rows.is_empty() {
+            Ok(None)
+        } else {
+            let first = rows.into_iter().nth(0);
+            match first {
+                Some(row) => match row {
+                    Ok(v) => match v {
+                        Some(ver) => Ok(Some(EntityIdVer {
+                            id: eid.id,
+                            ver: ver as u64,
+                        })),
+                        None => Ok(None),
+                    },
+                    Err(err) => Err(Box::new(
+                        ContainerSqliteError::FailedToGetRecordMaxVer {
+                            sql: sql.to_string(),
+                            err,
+                        },
+                    )),
+                },
+                None => panic!(),
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -847,6 +1150,66 @@ mod tests {
 
         let all_ids = tx.record_get_all_ids().unwrap();
         assert!(all_ids.is_empty());
+
+        tx.commit().unwrap();
+        container.destroy().unwrap();
+    }
+
+    #[test]
+    fn smoke_link() {
+        crate::app::init();
+
+        let mut container = ContainerSqlite::new("").unwrap();
+        container.create().unwrap();
+        let mut test_rng = helpers::TestRng::new(1);
+        let mut tx = container.begin_transaction().unwrap();
+
+        let r_eid1 = helpers::random_entity_id(&mut test_rng);
+        let record1 = helpers::random_record(&mut test_rng);
+        let r_eidv1 = tx.record_put(&r_eid1, &record1).unwrap();
+        let r_eid2 = helpers::random_entity_id(&mut test_rng);
+        let record2 = helpers::random_record(&mut test_rng);
+        let r_eidv2 = tx.record_put(&r_eid2, &record2).unwrap();
+
+        let eid = helpers::random_entity_id(&mut test_rng);
+
+        let eidv = tx.link_get_ver_latest(&eid).unwrap();
+        assert!(eidv.is_none());
+        let all_ids = tx.link_get_all_ids().unwrap();
+        assert!(all_ids.is_empty());
+
+        let link = Link {
+            ta: helpers::random_tags_and_attrs(&mut test_rng),
+            from: vec![r_eidv1.clone()],
+            to: vec![r_eidv2.clone()],
+        };
+
+        let eidv = tx.link_put(&eid, &link).unwrap();
+        assert_eq!(eid.id, eidv.id);
+        assert_eq!(eidv.ver, 1);
+
+        let link1 = tx.link_get(&eidv).unwrap().unwrap();
+        assert_eq!(link1, link);
+
+        let eidv1 = tx.link_get_ver_latest(&eid).unwrap().unwrap();
+        assert_eq!(eidv1, eidv);
+        let all_ids = tx.link_get_all_ids().unwrap();
+        assert_eq!(all_ids.len(), 1);
+        assert_eq!(all_ids[0], eid);
+
+        let deleted = tx.link_del(&eidv).unwrap();
+        assert!(deleted);
+        let eidv = tx.link_get_ver_latest(&eid).unwrap();
+        assert!(eidv.is_none());
+        let all_ids = tx.link_get_all_ids().unwrap();
+        assert!(all_ids.is_empty());
+
+        let deleted = tx.record_del(&r_eidv1).unwrap();
+        assert!(deleted);
+        let deleted = tx.record_del(&r_eidv2).unwrap();
+        assert!(deleted);
+        let r_all_ids = tx.record_get_all_ids().unwrap();
+        assert!(r_all_ids.is_empty());
 
         tx.commit().unwrap();
         container.destroy().unwrap();
