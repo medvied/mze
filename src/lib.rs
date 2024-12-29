@@ -118,8 +118,8 @@ pub struct SearchResult {
 /// TODO support ENTITY_VERSION_LATEST in EntityIdVer
 /// TODO consider Vec<_> instead of HashSet<_> and vice versa
 pub trait ContainerTransaction {
-    fn commit(self) -> Result<(), Box<dyn error::Error>>;
-    fn rollback(self) -> Result<(), Box<dyn error::Error>>;
+    fn commit(self: Box<Self>) -> Result<(), Box<dyn error::Error>>;
+    fn rollback(self: Box<Self>) -> Result<(), Box<dyn error::Error>>;
 
     fn tags_get(
         &self,
@@ -220,10 +220,6 @@ pub trait ContainerTransaction {
 }
 
 pub trait Container {
-    type Transaction<'a>
-    where
-        Self: 'a;
-
     fn create(&self) -> Result<(), Box<dyn error::Error>>;
     fn destroy(&self) -> Result<(), Box<dyn error::Error>>;
     fn load(&self, uri: String);
@@ -231,13 +227,13 @@ pub trait Container {
 
     fn begin_transaction(
         &mut self,
-    ) -> Result<Self::Transaction<'_>, Box<dyn error::Error>>;
+    ) -> Result<Box<dyn ContainerTransaction + '_>, Box<dyn error::Error>>;
 
     fn search(&self, query: String) -> SearchResult;
 }
 
 pub struct Registry {
-    // XXX pub containers: Vec<Box<dyn Container>>,
+    pub containers: Vec<Box<dyn Container>>,
 }
 
 pub trait Renderer {

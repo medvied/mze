@@ -98,8 +98,6 @@ impl ContainerSqlite {
 }
 
 impl Container for ContainerSqlite {
-    type Transaction<'a> = ContainerSqliteTransaction<'a>;
-
     /// TODO use NOT NULL here and check for NULL
     fn create(&self) -> Result<(), Box<dyn error::Error>> {
         let statements: &[&str] = &[
@@ -155,10 +153,11 @@ impl Container for ContainerSqlite {
 
     fn begin_transaction(
         &mut self,
-    ) -> Result<Self::Transaction<'_>, Box<dyn error::Error>> {
+    ) -> Result<Box<dyn ContainerTransaction + '_>, Box<dyn error::Error>>
+    {
         let tx = self.conn.transaction();
         match tx {
-            Ok(tx) => Ok(ContainerSqliteTransaction { tx }),
+            Ok(tx) => Ok(Box::new(ContainerSqliteTransaction { tx })),
             Err(err) => {
                 Err(Box::new(ContainerSqliteError::BeginTransactionFailed {
                     err,
@@ -173,7 +172,7 @@ impl Container for ContainerSqlite {
 }
 
 impl ContainerTransaction for ContainerSqliteTransaction<'_> {
-    fn commit(self) -> Result<(), Box<dyn error::Error>> {
+    fn commit(self: Box<Self>) -> Result<(), Box<dyn error::Error>> {
         let result = self.tx.commit();
         match result {
             Ok(ok) => Ok(ok),
@@ -185,7 +184,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         }
     }
 
-    fn rollback(self) -> Result<(), Box<dyn error::Error>> {
+    fn rollback(self: Box<Self>) -> Result<(), Box<dyn error::Error>> {
         let result = self.tx.rollback();
         match result {
             Ok(ok) => Ok(ok),
