@@ -236,12 +236,14 @@ pub trait Container {
     fn search(&self, query: String) -> SearchResult;
 }
 
-pub struct Registry {
-    pub containers: Vec<Box<dyn Container>>,
-}
-
 pub trait Renderer {
+    fn new(uri: &str, container: Box<dyn Container>)
+        -> Result<Self, Box<dyn error::Error>>
+    where
+        Self: Sized;
+
     fn run(self);
+    fn wait(self);
 }
 
 impl EntityId {
