@@ -60,6 +60,7 @@
 
 pub mod app;
 pub mod container;
+pub mod renderer;
 // rusrc adds the following message if the name is test or test_helpers
 //
 // help: if this is a test module, consider adding a `#[cfg(test)]`
@@ -237,13 +238,14 @@ pub trait Container {
 }
 
 pub trait Renderer {
-    fn new(uri: &str, container: Box<dyn Container>)
-        -> Result<Self, Box<dyn error::Error>>
+    fn new(
+        uri: &str,
+        container: Box<dyn Container>,
+    ) -> Result<Box<Self>, Box<dyn error::Error>>
     where
         Self: Sized;
 
-    fn run(self);
-    fn wait(self);
+    fn run(&mut self) -> Result<(), Box<dyn error::Error>>;
 }
 
 impl EntityId {
