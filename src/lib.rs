@@ -220,6 +220,10 @@ pub trait ContainerTransaction {
 }
 
 pub trait Container {
+    fn new(uri: &str) -> Result<Self, Box<dyn error::Error>>
+    where
+        Self: Sized;
+
     fn create(&self) -> Result<(), Box<dyn error::Error>>;
     fn destroy(&self) -> Result<(), Box<dyn error::Error>>;
     fn load(&self, uri: String);

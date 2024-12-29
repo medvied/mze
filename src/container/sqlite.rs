@@ -63,21 +63,6 @@ pub struct ContainerSqliteTransaction<'a> {
 }
 
 impl ContainerSqlite {
-    pub fn new(uri: &str) -> Result<ContainerSqlite, ContainerSqliteError> {
-        let conn = if uri.is_empty() {
-            rusqlite::Connection::open_in_memory()
-        } else {
-            rusqlite::Connection::open(uri)
-        };
-        match conn {
-            Ok(conn) => Ok(ContainerSqlite { conn }),
-            Err(e) => Err(ContainerSqliteError::CantOpenSqliteConnection {
-                uri: uri.to_string(),
-                err: e,
-            }),
-        }
-    }
-
     fn statements_execute(
         &self,
         statements: &[&str],
@@ -98,6 +83,23 @@ impl ContainerSqlite {
 }
 
 impl Container for ContainerSqlite {
+    fn new(uri: &str) -> Result<Self, Box<dyn error::Error>> {
+        let conn = if uri.is_empty() {
+            rusqlite::Connection::open_in_memory()
+        } else {
+            rusqlite::Connection::open(uri)
+        };
+        match conn {
+            Ok(conn) => Ok(ContainerSqlite { conn }),
+            Err(e) => {
+                Err(Box::new(ContainerSqliteError::CantOpenSqliteConnection {
+                    uri: uri.to_string(),
+                    err: e,
+                }))
+            }
+        }
+    }
+
     /// TODO use NOT NULL here and check for NULL
     fn create(&self) -> Result<(), Box<dyn error::Error>> {
         let statements: &[&str] = &[
