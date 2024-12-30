@@ -1024,6 +1024,7 @@ dependencies = [
  "rand_core",
  "rand_pcg",
  "rusqlite",
+ "serde",
  "thiserror",
  "tokio",
 ]
