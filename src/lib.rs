@@ -150,6 +150,8 @@ pub trait ContainerTransaction {
         eidv: &EntityIdVer,
     ) -> Result<(), Box<dyn error::Error>>;
 
+    // TODO change ver to be Option<u64> and
+    // handle None as "get the latest version"
     fn record_get(
         &self,
         eidv: &EntityIdVer,
@@ -163,7 +165,7 @@ pub trait ContainerTransaction {
         &mut self,
         eidv: &EntityIdVer,
     ) -> Result<bool, Box<dyn error::Error>>;
-    /// Returns latest versions of every record.
+    /// Returns EntityId of every record
     fn record_get_all_ids(
         &self,
     ) -> Result<Vec<EntityId>, Box<dyn error::Error>>;
@@ -240,8 +242,8 @@ pub trait Container {
 pub trait Renderer {
     fn new(
         uri: &str,
-        container: Box<dyn Container>,
-    ) -> Result<Box<Self>, Box<dyn error::Error>>
+        container: Box<dyn Container + Send>,
+    ) -> Result<Self, Box<dyn error::Error>>
     where
         Self: Sized;
 
