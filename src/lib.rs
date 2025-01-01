@@ -72,13 +72,13 @@ use std::{
     error,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct EntityId {
     /// Container-unique entity id.
     pub id: u128,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct EntityIdVer {
     // see EntityId::id
     pub id: u128,
@@ -92,7 +92,7 @@ pub struct EntityIdVer {
 
 pub const ENTITY_VERSION_LATEST: u64 = 0;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct TagsAndAttrs {
     pub tags: HashSet<String>,
     pub attrs: HashMap<String, String>,

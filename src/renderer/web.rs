@@ -4,6 +4,7 @@ use actix_web::{
     body::EitherBody, middleware, web, App, Either, HttpRequest, HttpResponse,
     HttpServer, Responder,
 };
+use futures_util::StreamExt as _;
 
 use tokio;
 
@@ -55,11 +56,10 @@ impl RendererWeb {
                 .service(
                     web::scope("/record")
                         .route("/data", web::get().to(Self::record_data_get))
+                        .route("/data", web::put().to(Self::record_data_put))
                         .route("/tags", web::get().to(Self::record_tags_get))
-                        .route(
-                            "/attrs",
-                            web::get().to(Self::record_attrs_get),
-                        ),
+                        .route("/attrs", web::get().to(Self::record_attrs_get))
+                        .route("all", web::get().to(Self::record_all_get)),
                 )
         })
         .bind(uri)?
@@ -144,5 +144,37 @@ impl RendererWeb {
             }
             Err(response) => Either::Right(response),
         })
+    }
+
+    async fn record_data_put(
+        mut body: web::Payload,
+        entity_path: web::Query<EntityPath>,
+        state_data: web::Data<std::sync::Mutex<RendererWebState>>,
+    ) -> Result<impl Responder, Box<dyn std::error::Error>> {
+        let mut bytes = web::BytesMut::new();
+        // TODO unlimited memory read from the user here
+        while let Some(item) = body.next().await {
+            bytes.extend_from_slice(&item?)
+        }
+        let record = Record {
+            ta: Default::default(),
+            data: Some(bytes.to_vec()), // TODO memory copy here
+        };
+        let eid = entity_path.get_id();
+
+        let mut state = state_data.lock().unwrap();
+        let mut tx = state.container.begin_transaction()?;
+        let eidv = tx.record_put(&eid, &record)?;
+        tx.commit()?;
+        Ok(web::Json(eidv))
+    }
+
+    async fn record_all_get(
+        state_data: web::Data<std::sync::Mutex<RendererWebState>>,
+    ) -> Result<impl Responder, Box<dyn std::error::Error>> {
+        let mut state = state_data.lock().unwrap();
+        let tx = state.container.begin_transaction()?;
+        let all_records = tx.record_get_all_ids()?;
+        Ok(web::Json(all_records))
     }
 }
