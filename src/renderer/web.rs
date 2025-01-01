@@ -84,14 +84,16 @@ impl RendererWeb {
             eidv = tx.record_get_ver_latest(&eid)?;
         }
         if eidv.is_none() {
-            return Ok(Err(HttpResponse::NotFound()
-                .body(format!("Not found: entity_path={entity_path:?}"))));
+            return Ok(Err(HttpResponse::NotFound().body(format!(
+                "Latest version not found: entity_path={entity_path:?}"
+            ))));
         }
         let eidv = eidv.unwrap();
         let record = tx.record_get(&eidv)?;
         if record.is_none() {
-            return Ok(Err(HttpResponse::NotFound()
-                .body(format!("Not found: entity_path={entity_path:?}"))));
+            return Ok(Err(HttpResponse::NotFound().body(format!(
+                "Record not found: entity_path={entity_path:?}"
+            ))));
         }
         Ok(Ok(record.unwrap()))
     }
