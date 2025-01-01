@@ -75,6 +75,7 @@ use std::{
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct EntityId {
     /// Container-unique entity id.
+    /// TODO split into id_lo and id_hi, do the same in EntityIdVer
     pub id: u128,
 }
 
