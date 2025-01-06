@@ -10,6 +10,9 @@ use tokio;
 
 use crate::{renderer::EntityPath, Container, Record, Renderer};
 
+mod files;
+use files::SEARCH_HTML;
+
 pub struct RendererWebState {
     container: Box<dyn Container + Send>,
 }
@@ -53,6 +56,8 @@ impl RendererWeb {
                 .wrap(middleware::Logger::default())
                 .app_data(data_state.clone())
                 .route("/test", web::get().to(Self::test))
+                .route("/", web::get().to(Self::search_html))
+                .route("/search", web::get().to(Self::search))
                 .service(
                     web::scope("/record")
                         .route("/data", web::get().to(Self::record_data_get))
@@ -70,6 +75,14 @@ impl RendererWeb {
 
     async fn test() -> impl Responder {
         HttpResponse::Ok().body("my test")
+    }
+
+    async fn search_html() -> impl Responder {
+        HttpResponse::Ok().body(SEARCH_HTML)
+    }
+
+    async fn search() -> impl Responder {
+        HttpResponse::Ok().body("Ok")
     }
 
     async fn record_get(
