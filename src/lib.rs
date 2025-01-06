@@ -52,6 +52,15 @@
  *
  *  - Linux kernel tree: files, functions, call graph
  *
+ *  TODO URI
+ *
+ *    mze://host/container/id
+ *    mze://host/container/id/ver
+ *    container/id
+ *    container/id/ver
+ *    id
+ *    id/ver
+ *
  * TODO log debug messages and errors consistently
  */
 
