@@ -46,3 +46,42 @@ Use S3 protocol instead of custom S3-like protocol
 
   - implement S3 in addition to the internal protocol. This would allow to
     inspect the data through S3 and use internal protocol internally.
+
+
+No versioning on mze level
+--------------------------
+
+- pros
+
+  - much easier to implement
+  - no ambiguity on which record version to show and how to handle search when
+    multiple records match
+
+- cons
+
+  - some kind of lossy or lossless versioning is still needed outside of mze
+    (example: backups)
+  - no way to search the old versions - if the data was there it would not be
+    found
+
+
+Use u64 entity id instead of u128
+---------------------------------
+
+- rationale
+
+  - u64 is enough to fit any personal knowledge database for the foreseeable
+    future
+  - if a need arises there is also u64 container namespace
+
+- pros
+
+  - easier to implement
+  - easier to display
+  - easier to link to from other records in text (like mze:///record_id)
+
+- cons
+
+  - in some cases it may be harder to split bits of the entity id when many
+    categories of records/links are needed and they are encoded in the parts of
+    the entity ids
