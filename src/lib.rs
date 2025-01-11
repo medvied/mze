@@ -54,7 +54,7 @@
  *
  *  TODO URI
  *
- *    mze://host/container/id
+ *    mze://host:port/container/id
  *    mze://host/container/id/ver
  *    container/id
  *    container/id/ver
