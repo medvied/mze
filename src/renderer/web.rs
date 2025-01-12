@@ -92,17 +92,7 @@ impl RendererWeb {
         let mut state = state_data.lock().unwrap();
         let tx = state.container.begin_transaction()?;
         let eid = entity_path.get_id();
-        let mut eidv = entity_path.get_id_ver();
-        if eidv.is_none() {
-            eidv = tx.record_get_ver_latest(&eid)?;
-        }
-        if eidv.is_none() {
-            return Ok(Err(HttpResponse::NotFound().body(format!(
-                "Latest version not found: entity_path={entity_path:?}"
-            ))));
-        }
-        let eidv = eidv.unwrap();
-        let record = tx.record_get(&eidv)?;
+        let record = tx.record_get(&eid)?;
         if record.is_none() {
             return Ok(Err(HttpResponse::NotFound().body(format!(
                 "Record not found: entity_path={entity_path:?}"
@@ -177,9 +167,10 @@ impl RendererWeb {
 
         let mut state = state_data.lock().unwrap();
         let mut tx = state.container.begin_transaction()?;
-        let eidv = tx.record_put(&eid, &record)?;
+        let eid1 = tx.record_put(&Some(eid), &record)?;
+        assert_eq!(eid1, eid); // TODO rewrite to look better
         tx.commit()?;
-        Ok(web::Json(eidv))
+        Ok(web::Json(eid))
     }
 
     async fn record_all_get(

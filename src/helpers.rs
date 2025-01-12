@@ -20,7 +20,7 @@ use rand::{self, distributions::DistString, Rng};
 use rand_core::{RngCore, SeedableRng};
 use rand_pcg;
 
-use crate::{EntityId, EntityIdVer, Record, TagsAndAttrs};
+use crate::{EntityId, Record, TagsAndAttrs};
 
 pub struct TestRng {
     rng: rand_pcg::Pcg64Mcg,
@@ -96,12 +96,5 @@ pub fn random_record(test_rng: &mut TestRng) -> Record {
 pub fn random_entity_id(test_rng: &mut TestRng) -> EntityId {
     EntityId {
         id: test_rng.rand_u128(),
-    }
-}
-
-pub fn random_entity_id_ver(test_rng: &mut TestRng) -> EntityIdVer {
-    EntityIdVer {
-        id: test_rng.rand_u128(),
-        ver: test_rng.rand_u64(),
     }
 }

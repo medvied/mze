@@ -2,7 +2,7 @@ use std::error;
 
 use serde;
 
-use crate::{Container, EntityId, EntityIdVer, Renderer};
+use crate::{Container, EntityId, Renderer};
 
 pub mod web;
 
@@ -12,7 +12,6 @@ pub struct EntityPath {
     pub container_id_hi: Option<u64>,
     pub id_lo: u64,
     pub id_hi: u64,
-    pub ver: Option<u64>,
 }
 
 pub fn new(
@@ -33,9 +32,5 @@ impl EntityPath {
 
     pub fn get_id(&self) -> EntityId {
         EntityId::new(self.id_lo, self.id_hi)
-    }
-
-    pub fn get_id_ver(&self) -> Option<EntityIdVer> {
-        Some(EntityIdVer::new(self.id_lo, self.id_hi, self.ver?))
     }
 }

@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    error,
+    error, iter,
 };
 
 use log::{debug, error};
@@ -10,8 +10,8 @@ use rusqlite;
 use thiserror::Error;
 
 use crate::{
-    Container, ContainerTransaction, EntityId, EntityIdVer, Link, Record,
-    SearchResult,
+    Container, ContainerTransaction, EntityId, Link, Record, SearchResult,
+    ENTITY_ID_START,
 };
 
 #[derive(Error, Debug)]
@@ -26,8 +26,8 @@ pub enum ContainerSqliteError {
     SqliteConnPrepareFailed { sql: String, err: rusqlite::Error },
     #[error("sqlite statement.query_map() failed: err={err}")]
     SqliteQueryMapFailed { err: rusqlite::Error },
-    #[error("too many rows for a single record: eidv={eidv:?}")]
-    TooManyRowsForARecord { eidv: EntityIdVer },
+    #[error("too many rows for a single record: eid={eid:?}")]
+    TooManyRowsForARecord { eid: EntityId },
     #[error("error retrieving record data: err={err}")]
     ErrorRetrievingRecordData { err: rusqlite::Error },
     #[error("error executing prepared statement: sql={sql} err={err}")]
@@ -36,13 +36,13 @@ pub enum ContainerSqliteError {
     FailedToInsert1Entry { sql: String, nr_inserted: usize },
     #[error("failed to get record max version: sql={sql} err={err}")]
     FailedToGetRecordMaxVer { sql: String, err: rusqlite::Error },
-    #[error("duplicate tags in container: eidv={eidv:?} tag={tag}")]
-    DuplicateTagsInContainer { eidv: EntityIdVer, tag: String },
+    #[error("duplicate tags in container: eid={eid:?} tag={tag}")]
+    DuplicateTagsInContainer { eid: EntityId, tag: String },
     #[error(
-        "duplicate attrs in container: eidv={eidv:?} key={key} value={value}"
+        "duplicate attrs in container: eid={eid:?} key={key} value={value}"
     )]
     DuplicateAttrsInContainer {
-        eidv: EntityIdVer,
+        eid: EntityId,
         key: String,
         value: String,
     },
@@ -106,30 +106,25 @@ impl Container for ContainerSqlite {
             "CREATE TABLE records(\
                 id_lo INTEGER, \
                 id_hi INTEGER, \
-                ver INTEGER, \
                 data BLOB\
             ) STRICT;",
             "CREATE TABLE tags(\
                 id_lo INTEGER, \
                 id_hi INTEGER, \
-                ver INTEGER, \
                 tag TEXT\
             ) STRICT;",
             "CREATE TABLE attrs(\
                 id_lo INTEGER, \
                 id_hi INTEGER, \
-                ver INTEGER, \
                 key TEXT, \
                 value TEXT\
             ) STRICT;",
             "CREATE TABLE links(\
                 id_lo INTEGER, \
                 id_hi INTEGER, \
-                ver INTEGER, \
                 is_to INTEGER, \
                 r_id_lo INTEGER, \
-                r_id_hi INTEGER, \
-                r_ver INTEGER\
+                r_id_hi INTEGER\
             ) STRICT;",
         ];
         self.statements_execute(statements)
@@ -173,6 +168,16 @@ impl Container for ContainerSqlite {
     }
 }
 
+impl ContainerSqliteTransaction<'_> {
+    fn eid_stored_max(
+        &self,
+    ) -> Result<Option<EntityId>, Box<dyn error::Error>> {
+        let all_record_ids = self.record_get_all_ids()?;
+        let all_link_ids = self.link_get_all_ids()?;
+        Ok(iter::chain(all_record_ids, all_link_ids).max())
+    }
+}
+
 impl ContainerTransaction for ContainerSqliteTransaction<'_> {
     fn commit(self: Box<Self>) -> Result<(), Box<dyn error::Error>> {
         let result = self.tx.commit();
@@ -198,12 +203,12 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
 
     fn tags_get(
         &self,
-        eidv: &EntityIdVer,
+        eid: &EntityId,
     ) -> Result<HashSet<String>, Box<dyn error::Error>> {
         let sql = "SELECT tag \
              FROM tags \
              WHERE \
-             id_lo = ? AND id_hi = ? AND ver = ?\
+             id_lo = ? AND id_hi = ?\
              ;";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
@@ -217,10 +222,10 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 ))
             }
         };
-        let rows = statement.query_map(
-            (eidv.id_lo() as i64, eidv.id_hi() as i64, eidv.ver() as i64),
-            |row| row.get::<&str, String>("tag"),
-        );
+        let rows = statement
+            .query_map((eid.id_lo() as i64, eid.id_hi() as i64), |row| {
+                row.get::<&str, String>("tag")
+            });
         if let Err(err) = rows {
             return Err(Box::new(
                 ContainerSqliteError::SqliteQueryMapFailed { err },
@@ -236,7 +241,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                     if !inserted {
                         return Err(Box::new(
                             ContainerSqliteError::DuplicateTagsInContainer {
-                                eidv: eidv.clone(),
+                                eid: *eid,
                                 tag,
                             },
                         ));
@@ -256,11 +261,11 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
 
     fn tags_put(
         &mut self,
-        eidv: &EntityIdVer,
+        eid: &EntityId,
         tags: &HashSet<String>,
     ) -> Result<(), Box<dyn error::Error>> {
-        let sql = "INSERT INTO tags(id_lo, id_hi, ver, tag) \
-                   VALUES(?, ?, ?, ?);";
+        let sql = "INSERT INTO tags(id_lo, id_hi, tag) \
+                   VALUES(?, ?, ?);";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
             Ok(ok) => ok,
@@ -275,9 +280,8 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         };
         for tag in tags {
             let nr_inserted = statement.execute((
-                eidv.id_lo() as i64,
-                eidv.id_hi() as i64,
-                eidv.ver() as i64,
+                eid.id_lo() as i64,
+                eid.id_hi() as i64,
                 tag,
             ));
             if let Err(err) = nr_inserted {
@@ -294,10 +298,10 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
 
     fn tags_del(
         &mut self,
-        eidv: &EntityIdVer,
+        eid: &EntityId,
     ) -> Result<(), Box<dyn error::Error>> {
         let sql = "DELETE FROM tags WHERE \
-                   id_lo = ? AND id_hi = ? AND ver = ?\
+                   id_lo = ? AND id_hi = ?\
                    ;";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
@@ -311,11 +315,8 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 ))
             }
         };
-        let nr_deleted = statement.execute((
-            eidv.id_lo() as i64,
-            eidv.id_hi() as i64,
-            eidv.ver() as i64,
-        ));
+        let nr_deleted =
+            statement.execute((eid.id_lo() as i64, eid.id_hi() as i64));
         if let Err(err) = nr_deleted {
             return Err(Box::new(
                 ContainerSqliteError::ErrorExecutingStatement {
@@ -324,21 +325,18 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 },
             ));
         }
-        debug!(
-            "tags_del(): eidv={eidv:?} nr_deleted={}",
-            nr_deleted.unwrap()
-        );
+        debug!("tags_del(): eid={eid:?} nr_deleted={}", nr_deleted.unwrap());
         Ok(())
     }
 
     fn attrs_get(
         &self,
-        eidv: &EntityIdVer,
+        eid: &EntityId,
     ) -> Result<HashMap<String, String>, Box<dyn error::Error>> {
         let sql = "SELECT key, value \
              FROM attrs \
              WHERE \
-             id_lo = ? AND id_hi = ? AND ver = ?\
+             id_lo = ? AND id_hi = ?\
              ;";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
@@ -353,7 +351,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             }
         };
         let rows = statement.query_map(
-            (eidv.id_lo() as i64, eidv.id_hi() as i64, eidv.ver() as i64),
+            (eid.id_lo() as i64, eid.id_hi() as i64),
             |row| {
                 let key = row.get::<&str, String>("key");
                 let value = row.get::<&str, String>("value");
@@ -387,7 +385,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                     if old.is_some() {
                         return Err(Box::new(
                             ContainerSqliteError::DuplicateAttrsInContainer {
-                                eidv: eidv.clone(),
+                                eid: *eid,
                                 key,
                                 value,
                             },
@@ -408,11 +406,11 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
 
     fn attrs_put(
         &mut self,
-        eidv: &EntityIdVer,
+        eid: &EntityId,
         attrs: &HashMap<String, String>,
     ) -> Result<(), Box<dyn error::Error>> {
-        let sql = "INSERT INTO attrs(id_lo, id_hi, ver, key, value) \
-                   VALUES(?, ?, ?, ?, ?);";
+        let sql = "INSERT INTO attrs(id_lo, id_hi, key, value) \
+                   VALUES(?, ?, ?, ?);";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
             Ok(ok) => ok,
@@ -427,9 +425,8 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         };
         for (key, value) in attrs {
             let nr_inserted = statement.execute((
-                eidv.id_lo() as i64,
-                eidv.id_hi() as i64,
-                eidv.ver() as i64,
+                eid.id_lo() as i64,
+                eid.id_hi() as i64,
                 key,
                 value,
             ));
@@ -447,10 +444,10 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
 
     fn attrs_del(
         &mut self,
-        eidv: &EntityIdVer,
+        eid: &EntityId,
     ) -> Result<(), Box<dyn error::Error>> {
         let sql = "DELETE FROM attrs WHERE \
-                   id_lo = ? AND id_hi = ? AND ver = ?\
+                   id_lo = ? AND id_hi = ?\
                    ;";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
@@ -464,11 +461,8 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 ))
             }
         };
-        let nr_deleted = statement.execute((
-            eidv.id_lo() as i64,
-            eidv.id_hi() as i64,
-            eidv.ver() as i64,
-        ));
+        let nr_deleted =
+            statement.execute((eid.id_lo() as i64, eid.id_hi() as i64));
         if let Err(err) = nr_deleted {
             return Err(Box::new(
                 ContainerSqliteError::ErrorExecutingStatement {
@@ -478,7 +472,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             ));
         }
         debug!(
-            "attrs_del(): eidv={eidv:?} nr_deleted={}",
+            "attrs_del(): eid={eid:?} nr_deleted={}",
             nr_deleted.unwrap(),
         );
         Ok(())
@@ -486,12 +480,12 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
 
     fn record_get(
         &self,
-        eidv: &EntityIdVer,
+        eid: &EntityId,
     ) -> Result<Option<Record>, Box<dyn error::Error>> {
         let sql = "SELECT data \
              FROM records \
              WHERE \
-             id_lo = ? AND id_hi = ? AND ver = ?\
+             id_lo = ? AND id_hi = ?\
              ;";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
@@ -505,10 +499,10 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 ))
             }
         };
-        let rows = statement.query_map(
-            (eidv.id_lo() as i64, eidv.id_hi() as i64, eidv.ver() as i64),
-            |row| row.get::<&str, Vec<u8>>("data"),
-        );
+        let rows = statement
+            .query_map((eid.id_lo() as i64, eid.id_hi() as i64), |row| {
+                row.get::<&str, Vec<u8>>("data")
+            });
         if let Err(err) = rows {
             return Err(Box::new(
                 ContainerSqliteError::SqliteQueryMapFailed { err },
@@ -517,9 +511,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         let rows: Vec<_> = rows.unwrap().collect();
         if rows.len() > 1 {
             return Err(Box::new(
-                ContainerSqliteError::TooManyRowsForARecord {
-                    eidv: eidv.clone(),
-                },
+                ContainerSqliteError::TooManyRowsForARecord { eid: *eid },
             ));
         }
         if rows.is_empty() {
@@ -535,7 +527,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             }
         };
         let record = Record {
-            ta: self.tags_and_attrs_get(eidv)?,
+            ta: self.tags_and_attrs_get(eid)?,
             data: Some(data),
         };
         Ok(Some(record))
@@ -543,20 +535,16 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
 
     fn record_put(
         &mut self,
-        eid: &EntityId,
+        eid: &Option<EntityId>,
         record: &Record,
-    ) -> Result<EntityIdVer, Box<dyn error::Error>> {
-        let eidv = self.record_get_ver_latest(eid)?;
-        let eidv = EntityIdVer {
-            id: eid.id,
-            ver: match eidv {
-                Some(eidv) => eidv.ver + 1,
-                None => 1,
-            },
+    ) -> Result<EntityId, Box<dyn error::Error>> {
+        let eid = match eid {
+            None => self.eid_stored_max()?.unwrap_or(ENTITY_ID_START),
+            Some(eid) => *eid,
         };
-        self.tags_and_attrs_put(&eidv, &record.ta)?;
-        let sql = "INSERT INTO records(id_lo, id_hi, ver, data) \
-                   VALUES(?, ?, ?, ?);";
+        self.tags_and_attrs_put(&eid, &record.ta)?;
+        let sql = "INSERT INTO records(id_lo, id_hi, data) \
+                   VALUES(?, ?, ?);";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
             Ok(ok) => ok,
@@ -570,9 +558,8 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             }
         };
         let nr_inserted = statement.execute((
-            eidv.id_lo() as i64,
-            eidv.id_hi() as i64,
-            eidv.ver() as i64,
+            eid.id_lo() as i64,
+            eid.id_hi() as i64,
             &record.data,
         ));
         if let Err(err) = nr_inserted {
@@ -592,16 +579,16 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 },
             ));
         }
-        Ok(eidv)
+        Ok(eid)
     }
 
     fn record_del(
         &mut self,
-        eidv: &EntityIdVer,
+        eid: &EntityId,
     ) -> Result<bool, Box<dyn error::Error>> {
-        self.tags_and_attrs_del(eidv)?;
+        self.tags_and_attrs_del(eid)?;
         let sql = "DELETE FROM records WHERE \
-                   id_lo = ? AND id_hi = ? AND ver = ?\
+                   id_lo = ? AND id_hi = ?\
                    ;";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
@@ -615,11 +602,8 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 ))
             }
         };
-        let nr_deleted = statement.execute((
-            eidv.id_lo() as i64,
-            eidv.id_hi() as i64,
-            eidv.ver() as i64,
-        ));
+        let nr_deleted =
+            statement.execute((eid.id_lo() as i64, eid.id_hi() as i64));
         if let Err(err) = nr_deleted {
             return Err(Box::new(
                 ContainerSqliteError::ErrorExecutingStatement {
@@ -628,13 +612,14 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 },
             ));
         }
+        // TODO check nr_deleted <= 1
         Ok(nr_deleted.unwrap() > 0)
     }
 
     fn record_get_all_ids(
         &self,
     ) -> Result<Vec<EntityId>, Box<dyn error::Error>> {
-        let sql = "SELECT DISTINCT id_hi, id_lo \
+        let sql = "SELECT id_hi, id_lo \
                    FROM records;";
         debug!("tx.prepare(): sql={sql}");
         let statement = self.tx.prepare(sql);
@@ -685,84 +670,18 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 }
             }
         }
+        // TODO check for uniqueness
         Ok(vids)
-    }
-
-    fn record_get_ver_latest(
-        &self,
-        eid: &EntityId,
-    ) -> Result<Option<EntityIdVer>, Box<dyn error::Error>> {
-        let sql = "SELECT max(ver) \
-             FROM records \
-             WHERE \
-             id_lo = ? AND id_hi = ?\
-             ;";
-        debug!("tx.prepare(): sql={sql}");
-        let statement = self.tx.prepare(sql);
-        if let Err(err) = statement {
-            return Err(Box::new(
-                ContainerSqliteError::SqliteConnPrepareFailed {
-                    sql: sql.to_string(),
-                    err,
-                },
-            ));
-        }
-        let mut statement = statement.unwrap();
-        let rows = statement.query_map(
-            (eid.id_lo() as i64, eid.id_hi() as i64),
-            |row| {
-                let value = row.get_ref(0);
-                match value {
-                    Ok(v) => match Into::<rusqlite::types::Value>::into(v) {
-                        rusqlite::types::Value::Null => Ok(None),
-                        rusqlite::types::Value::Integer(i) => Ok(Some(i)),
-                        _ => panic!(),
-                    },
-                    Err(err) => Err(err),
-                }
-            },
-        );
-        if let Err(err) = rows {
-            debug!("err={err}");
-            return Err(Box::new(
-                ContainerSqliteError::SqliteQueryMapFailed { err },
-            ));
-        }
-        let rows: Vec<_> = rows.unwrap().collect();
-        assert!(rows.len() <= 1);
-        if rows.is_empty() {
-            Ok(None)
-        } else {
-            let first = rows.into_iter().nth(0);
-            match first {
-                Some(row) => match row {
-                    Ok(v) => match v {
-                        Some(ver) => Ok(Some(EntityIdVer {
-                            id: eid.id,
-                            ver: ver as u64,
-                        })),
-                        None => Ok(None),
-                    },
-                    Err(err) => Err(Box::new(
-                        ContainerSqliteError::FailedToGetRecordMaxVer {
-                            sql: sql.to_string(),
-                            err,
-                        },
-                    )),
-                },
-                None => panic!(),
-            }
-        }
     }
 
     fn link_get(
         &self,
-        eidv: &EntityIdVer,
+        eid: &EntityId,
     ) -> Result<Option<Link>, Box<dyn error::Error>> {
-        let sql = "SELECT is_to, r_id_lo, r_id_hi, r_ver \
+        let sql = "SELECT is_to, r_id_lo, r_id_hi \
              FROM links \
              WHERE \
-             id_lo = ? AND id_hi = ? AND ver = ?\
+             id_lo = ? AND id_hi = ?\
              ;";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
@@ -777,13 +696,12 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             }
         };
         let rows = statement.query_map(
-            (eidv.id_lo() as i64, eidv.id_hi() as i64, eidv.ver() as i64),
+            (eid.id_lo() as i64, eid.id_hi() as i64),
             |row| {
                 Ok((
                     row.get::<&str, bool>("is_to")?,
                     row.get::<&str, i64>("r_id_lo")?,
                     row.get::<&str, i64>("r_id_hi")?,
-                    row.get::<&str, i64>("r_ver")?,
                 ))
             },
         );
@@ -796,16 +714,12 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         let mut to = Vec::new();
         for row in rows.unwrap() {
             match row {
-                Ok((is_to, r_id_lo, r_id_hi, r_ver)) => {
-                    let r_eidv = EntityIdVer::new(
-                        r_id_lo as u64,
-                        r_id_hi as u64,
-                        r_ver as u64,
-                    );
+                Ok((is_to, r_id_lo, r_id_hi)) => {
+                    let r_eid = EntityId::new(r_id_lo as u64, r_id_hi as u64);
                     if is_to {
-                        to.push(r_eidv);
+                        to.push(r_eid);
                     } else {
-                        from.push(r_eidv);
+                        from.push(r_eid);
                     }
                 }
                 Err(err) => {
@@ -818,7 +732,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             }
         }
         let link = Link {
-            ta: self.tags_and_attrs_get(eidv)?,
+            ta: self.tags_and_attrs_get(eid)?,
             from,
             to,
         };
@@ -827,21 +741,17 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
 
     fn link_put(
         &mut self,
-        eid: &EntityId,
+        eid: &Option<EntityId>,
         link: &Link,
-    ) -> Result<EntityIdVer, Box<dyn error::Error>> {
-        let eidv = self.link_get_ver_latest(eid)?;
-        let eidv = EntityIdVer {
-            id: eid.id,
-            ver: match eidv {
-                Some(eidv) => eidv.ver + 1,
-                None => 1,
-            },
+    ) -> Result<EntityId, Box<dyn error::Error>> {
+        let eid = match eid {
+            None => self.eid_stored_max()?.unwrap_or(ENTITY_ID_START),
+            Some(eid) => *eid,
         };
-        self.tags_and_attrs_put(&eidv, &link.ta)?;
-        let sql = "INSERT INTO links(id_lo, id_hi, ver, \
-                                     is_to, r_id_lo, r_id_hi, r_ver) \
-                   VALUES(?, ?, ?, ?, ?, ?, ?);";
+        self.tags_and_attrs_put(&eid, &link.ta)?;
+        let sql = "INSERT INTO links(id_lo, id_hi, \
+                                     is_to, r_id_lo, r_id_hi) \
+                   VALUES(?, ?, ?, ?, ?);";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
             Ok(ok) => ok,
@@ -854,16 +764,14 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 ))
             }
         };
-        for (is_to, vec_eidv) in [(false, &link.from), (true, &link.to)] {
-            for r_eidv in vec_eidv {
+        for (is_to, vec_eid) in [(false, &link.from), (true, &link.to)] {
+            for r_eid in vec_eid {
                 let nr_inserted = statement.execute((
-                    eidv.id_lo() as i64,
-                    eidv.id_hi() as i64,
-                    eidv.ver() as i64,
+                    eid.id_lo() as i64,
+                    eid.id_hi() as i64,
                     is_to,
-                    r_eidv.id_lo() as i64,
-                    r_eidv.id_hi() as i64,
-                    r_eidv.ver() as i64,
+                    r_eid.id_lo() as i64,
+                    r_eid.id_hi() as i64,
                 ));
                 if let Err(err) = nr_inserted {
                     return Err(Box::new(
@@ -884,16 +792,16 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 }
             }
         }
-        Ok(eidv)
+        Ok(eid)
     }
 
     fn link_del(
         &mut self,
-        eidv: &EntityIdVer,
+        eid: &EntityId,
     ) -> Result<bool, Box<dyn error::Error>> {
-        self.tags_and_attrs_del(eidv)?;
+        self.tags_and_attrs_del(eid)?;
         let sql = "DELETE FROM links WHERE \
-                   id_lo = ? AND id_hi = ? AND ver = ?\
+                   id_lo = ? AND id_hi = ?\
                    ;";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
@@ -907,11 +815,8 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 ))
             }
         };
-        let nr_deleted = statement.execute((
-            eidv.id_lo() as i64,
-            eidv.id_hi() as i64,
-            eidv.ver() as i64,
-        ));
+        let nr_deleted =
+            statement.execute((eid.id_lo() as i64, eid.id_hi() as i64));
         if let Err(err) = nr_deleted {
             return Err(Box::new(
                 ContainerSqliteError::ErrorExecutingStatement {
@@ -920,6 +825,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 },
             ));
         }
+        // TODO check that nr_deleted <= 1 and return an error if it's not
         Ok(nr_deleted.unwrap() > 0)
     }
 
@@ -977,74 +883,8 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 }
             }
         }
+        // TODO check uniqueness
         Ok(vids)
-    }
-
-    fn link_get_ver_latest(
-        &self,
-        eid: &EntityId,
-    ) -> Result<Option<EntityIdVer>, Box<dyn error::Error>> {
-        let sql = "SELECT max(ver) \
-             FROM links \
-             WHERE \
-             id_lo = ? AND id_hi = ?\
-             ;";
-        debug!("tx.prepare(): sql={sql}");
-        let statement = self.tx.prepare(sql);
-        if let Err(err) = statement {
-            return Err(Box::new(
-                ContainerSqliteError::SqliteConnPrepareFailed {
-                    sql: sql.to_string(),
-                    err,
-                },
-            ));
-        }
-        let mut statement = statement.unwrap();
-        let rows = statement.query_map(
-            (eid.id_lo() as i64, eid.id_hi() as i64),
-            |row| {
-                let value = row.get_ref(0);
-                match value {
-                    Ok(v) => match Into::<rusqlite::types::Value>::into(v) {
-                        rusqlite::types::Value::Null => Ok(None),
-                        rusqlite::types::Value::Integer(i) => Ok(Some(i)),
-                        _ => panic!(),
-                    },
-                    Err(err) => Err(err),
-                }
-            },
-        );
-        if let Err(err) = rows {
-            debug!("err={err}");
-            return Err(Box::new(
-                ContainerSqliteError::SqliteQueryMapFailed { err },
-            ));
-        }
-        let rows: Vec<_> = rows.unwrap().collect();
-        assert!(rows.len() <= 1);
-        if rows.is_empty() {
-            Ok(None)
-        } else {
-            let first = rows.into_iter().nth(0);
-            match first {
-                Some(row) => match row {
-                    Ok(v) => match v {
-                        Some(ver) => Ok(Some(EntityIdVer {
-                            id: eid.id,
-                            ver: ver as u64,
-                        })),
-                        None => Ok(None),
-                    },
-                    Err(err) => Err(Box::new(
-                        ContainerSqliteError::FailedToGetRecordMaxVer {
-                            sql: sql.to_string(),
-                            err,
-                        },
-                    )),
-                },
-                None => panic!(),
-            }
-        }
     }
 }
 
@@ -1060,21 +900,21 @@ mod tests {
         let mut container = ContainerSqlite::new("").unwrap();
         container.create().unwrap();
         let mut test_rng = helpers::TestRng::new(1);
-        let eidv = helpers::random_entity_id_ver(&mut test_rng);
+        let eid = helpers::random_entity_id(&mut test_rng);
         let mut tx = container.begin_transaction().unwrap();
 
-        let tags1 = tx.tags_get(&eidv).unwrap();
+        let tags1 = tx.tags_get(&eid).unwrap();
         assert!(tags1.is_empty());
 
         let tags = helpers::random_tags(&mut test_rng);
-        tx.tags_put(&eidv, &tags).unwrap();
+        tx.tags_put(&eid, &tags).unwrap();
 
-        let tags1 = tx.tags_get(&eidv).unwrap();
+        let tags1 = tx.tags_get(&eid).unwrap();
         assert_eq!(tags1, tags);
 
-        tx.tags_del(&eidv).unwrap();
+        tx.tags_del(&eid).unwrap();
 
-        let tags1 = tx.tags_get(&eidv).unwrap();
+        let tags1 = tx.tags_get(&eid).unwrap();
         assert!(tags1.is_empty());
 
         tx.commit().unwrap();
@@ -1088,21 +928,21 @@ mod tests {
         let mut container = ContainerSqlite::new("").unwrap();
         container.create().unwrap();
         let mut test_rng = helpers::TestRng::new(1);
-        let eidv = helpers::random_entity_id_ver(&mut test_rng);
+        let eid = helpers::random_entity_id(&mut test_rng);
         let mut tx = container.begin_transaction().unwrap();
 
-        let attrs1 = tx.attrs_get(&eidv).unwrap();
+        let attrs1 = tx.attrs_get(&eid).unwrap();
         assert!(attrs1.is_empty());
 
         let attrs = helpers::random_attrs(&mut test_rng);
-        tx.attrs_put(&eidv, &attrs).unwrap();
+        tx.attrs_put(&eid, &attrs).unwrap();
 
-        let attrs1 = tx.attrs_get(&eidv).unwrap();
+        let attrs1 = tx.attrs_get(&eid).unwrap();
         assert_eq!(attrs1, attrs);
 
-        tx.attrs_del(&eidv).unwrap();
+        tx.attrs_del(&eid).unwrap();
 
-        let attrs1 = tx.attrs_get(&eidv).unwrap();
+        let attrs1 = tx.attrs_get(&eid).unwrap();
         assert!(attrs1.is_empty());
 
         tx.commit().unwrap();
@@ -1119,41 +959,33 @@ mod tests {
         let eid = helpers::random_entity_id(&mut test_rng);
         let mut tx = container.begin_transaction().unwrap();
 
-        let eidv = tx.record_get_ver_latest(&eid).unwrap();
-        assert!(eidv.is_none());
-
         let all_ids = tx.record_get_all_ids().unwrap();
         assert!(all_ids.is_empty());
 
         let record = helpers::random_record(&mut test_rng);
-        let eidv = tx.record_put(&eid, &record).unwrap();
-        assert_eq!(eid.id, eidv.id);
-        assert_eq!(eidv.ver, 1);
+        let eid1 = tx.record_put(&Some(eid), &record).unwrap();
+        assert_eq!(eid1, eid);
 
-        let record1 = tx.record_get(&eidv).unwrap().unwrap();
+        let record1 = tx.record_get(&eid).unwrap().unwrap();
         assert_eq!(record1, record);
-
-        let eidv1 = tx.record_get_ver_latest(&eid).unwrap().unwrap();
-        assert_eq!(eidv1, eidv);
 
         let all_ids = tx.record_get_all_ids().unwrap();
         assert_eq!(all_ids.len(), 1);
         assert_eq!(all_ids[0], eid);
 
-        let deleted = tx.record_del(&eidv).unwrap();
+        let deleted = tx.record_del(&eid).unwrap();
         assert!(deleted);
 
-        let record1 = tx.record_get(&eidv).unwrap();
+        let record1 = tx.record_get(&eid).unwrap();
         assert!(record1.is_none());
-
-        let eidv = tx.record_get_ver_latest(&eid).unwrap();
-        assert!(eidv.is_none());
 
         let all_ids = tx.record_get_all_ids().unwrap();
         assert!(all_ids.is_empty());
 
         tx.commit().unwrap();
         container.destroy().unwrap();
+
+        // TODO test record and link put() with eid=None
     }
 
     #[test]
@@ -1167,47 +999,40 @@ mod tests {
 
         let r_eid1 = helpers::random_entity_id(&mut test_rng);
         let record1 = helpers::random_record(&mut test_rng);
-        let r_eidv1 = tx.record_put(&r_eid1, &record1).unwrap();
+        let _ = tx.record_put(&Some(r_eid1), &record1).unwrap();
         let r_eid2 = helpers::random_entity_id(&mut test_rng);
         let record2 = helpers::random_record(&mut test_rng);
-        let r_eidv2 = tx.record_put(&r_eid2, &record2).unwrap();
+        let _ = tx.record_put(&Some(r_eid2), &record2).unwrap();
 
         let eid = helpers::random_entity_id(&mut test_rng);
 
-        let eidv = tx.link_get_ver_latest(&eid).unwrap();
-        assert!(eidv.is_none());
         let all_ids = tx.link_get_all_ids().unwrap();
         assert!(all_ids.is_empty());
 
         let link = Link {
             ta: helpers::random_tags_and_attrs(&mut test_rng),
-            from: vec![r_eidv1.clone()],
-            to: vec![r_eidv2.clone()],
+            from: vec![r_eid1],
+            to: vec![r_eid2],
         };
 
-        let eidv = tx.link_put(&eid, &link).unwrap();
-        assert_eq!(eid.id, eidv.id);
-        assert_eq!(eidv.ver, 1);
+        let eid1 = tx.link_put(&Some(eid), &link).unwrap();
+        assert_eq!(eid1, eid);
 
-        let link1 = tx.link_get(&eidv).unwrap().unwrap();
+        let link1 = tx.link_get(&eid).unwrap().unwrap();
         assert_eq!(link1, link);
 
-        let eidv1 = tx.link_get_ver_latest(&eid).unwrap().unwrap();
-        assert_eq!(eidv1, eidv);
         let all_ids = tx.link_get_all_ids().unwrap();
-        assert_eq!(all_ids.len(), 1);
+        assert_eq!(all_ids.len(), 1, "all_ids={:?}", all_ids);
         assert_eq!(all_ids[0], eid);
 
-        let deleted = tx.link_del(&eidv).unwrap();
+        let deleted = tx.link_del(&eid).unwrap();
         assert!(deleted);
-        let eidv = tx.link_get_ver_latest(&eid).unwrap();
-        assert!(eidv.is_none());
         let all_ids = tx.link_get_all_ids().unwrap();
         assert!(all_ids.is_empty());
 
-        let deleted = tx.record_del(&r_eidv1).unwrap();
+        let deleted = tx.record_del(&r_eid1).unwrap();
         assert!(deleted);
-        let deleted = tx.record_del(&r_eidv2).unwrap();
+        let deleted = tx.record_del(&r_eid2).unwrap();
         assert!(deleted);
         let r_all_ids = tx.record_get_all_ids().unwrap();
         assert!(r_all_ids.is_empty());
