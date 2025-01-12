@@ -86,6 +86,10 @@ pub struct EntityId {
 /// and more or less the same width for the first ~1M ids
 pub const ENTITY_ID_START: EntityId = EntityId { id: 10000 };
 
+// TODO create a data structure for tags and attributes to share
+// strings between different entities (also check if Rust could do that
+// automatically)
+
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct TagsAndAttrs {
     pub tags: HashSet<String>,
