@@ -95,6 +95,6 @@ pub fn random_record(test_rng: &mut TestRng) -> Record {
 
 pub fn random_entity_id(test_rng: &mut TestRng) -> EntityId {
     EntityId {
-        id: test_rng.rand_u128(),
+        id: test_rng.rand_u64(),
     }
 }

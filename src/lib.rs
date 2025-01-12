@@ -78,8 +78,7 @@ use std::{
 )]
 pub struct EntityId {
     /// Container-unique entity id.
-    /// TODO split into id_lo and id_hi
-    pub id: u128,
+    pub id: u64,
 }
 
 /// Start from this EntityId by default
@@ -235,18 +234,12 @@ pub trait Renderer {
 }
 
 impl EntityId {
-    pub fn new(id_lo: u64, id_hi: u64) -> EntityId {
-        EntityId {
-            id: ((id_hi as u128) << 64) + (id_lo as u128),
-        }
+    pub fn new(id: u64) -> EntityId {
+        EntityId { id }
     }
 
-    pub fn id_lo(&self) -> u64 {
-        self.id as u64
-    }
-
-    pub fn id_hi(&self) -> u64 {
-        (self.id >> 64) as u64
+    pub fn id(&self) -> u64 {
+        self.id
     }
 
     pub fn add_1(&self) -> Self {

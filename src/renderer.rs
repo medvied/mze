@@ -8,10 +8,8 @@ pub mod web;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct EntityPath {
-    pub container_id_lo: Option<u64>,
-    pub container_id_hi: Option<u64>,
-    pub id_lo: u64,
-    pub id_hi: u64,
+    pub container_id: Option<u64>,
+    pub id: u64,
 }
 
 pub fn new(
@@ -27,10 +25,10 @@ pub fn new(
 
 impl EntityPath {
     pub fn get_container_id(&self) -> Option<EntityId> {
-        Some(EntityId::new(self.container_id_lo?, self.container_id_hi?))
+        Some(EntityId::new(self.container_id?))
     }
 
     pub fn get_id(&self) -> EntityId {
-        EntityId::new(self.id_lo, self.id_hi)
+        EntityId::new(self.id)
     }
 }
