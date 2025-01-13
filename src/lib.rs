@@ -45,6 +45,37 @@
  *
  *  - Linux kernel tree: files, functions, call graph
  *
+ *  Search query format
+ *
+ *  - the search query is a whitespace-separated list of words that have
+ *    to be applicable for every search result (i.e. there is an implicit
+ *    logical AND between every pair of words)
+ *  - search() looks for every word from the query in the text
+ *  - search() looks for every word that starts with `#`: it removes the `#`
+ *    and then searches for the string in the tags as awell
+ *  - search() looks for every word that has `=` after `#`: it removes `#`,
+ *    splits the remaining string into key and value on the first `=` and then
+ *    searches for the key=value in the attributes
+ *  - TODO `from:id`, `to:id` - search() looks for links with specific record
+ *    ids
+ *  - TODO `from:$(search query)`, `to:$(search query)` - look for links
+ *    that have records from the search query
+ *
+ *  Another way to describe search query format
+ *
+ *  - # - all tags
+ *  - #= - all attributes
+ *  - #tag - search for `tag` in tags and `#tag` in the text
+ *  - #key=value - search for `key=value` in tags, `key`=`value` in attributes
+ *    and #key=value in the text
+ *  - #key= - search for `key=` in tags and `key` in the attribute keys
+ *    (regardless of value for the key)
+ *  - #=value - search for `=value` in tags and `value` in the attribute values
+ *    (regardless of the key for attribute)
+ *  - word - search for the `word` in tags, attribute keys and values and text
+ *  - TODO from:id, to:id - search tags, keys, values and text that contain
+ *    the strings
+ *
  *  TODO URI
  *
  *    mze://host:port/container/id
@@ -62,6 +93,8 @@
 pub mod app;
 pub mod container;
 pub mod renderer;
+pub mod search_query;
+pub use search_query::SearchQuery;
 // rusrc adds the following message if the name is test or test_helpers
 //
 // help: if this is a test module, consider adding a `#[cfg(test)]`
