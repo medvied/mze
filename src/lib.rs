@@ -142,9 +142,27 @@ pub struct Link {
     pub to: Vec<EntityId>,
 }
 
-pub struct SearchResult {
-    pub records: Vec<EntityId>,
-    pub links: Vec<EntityId>,
+pub struct SearchResultRecord {
+    pub eid: EntityId,
+}
+
+pub struct SearchResultLink {
+    pub eid: EntityId,
+}
+
+pub struct SearchResultTag {
+    pub tag: String,
+}
+
+pub struct SearchResultAttribute {
+    pub key: String,
+}
+
+pub enum SearchResult {
+    Record(SearchResultRecord),
+    Link(SearchResultLink),
+    Tag(SearchResultTag),
+    Attribute(SearchResultAttribute),
 }
 
 /// TODO consider Vec<_> instead of HashSet<_> and vice versa
@@ -256,7 +274,7 @@ pub trait Container {
         &mut self,
     ) -> Result<Box<dyn ContainerTransaction + '_>, Box<dyn error::Error>>;
 
-    fn search(&self, query: String) -> SearchResult;
+    fn search(&self, query: &str) -> Vec<SearchResult>;
 }
 
 pub trait Renderer {

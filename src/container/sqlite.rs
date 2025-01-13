@@ -158,7 +158,7 @@ impl Container for ContainerSqlite {
         }
     }
 
-    fn search(&self, _query: String) -> SearchResult {
+    fn search(&self, _query: &str) -> Vec<SearchResult> {
         todo!();
     }
 }
