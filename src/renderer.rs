@@ -12,6 +12,11 @@ pub struct EntityPath {
     pub id: u64,
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub struct SearchQuery {
+    pub q: String,
+}
+
 pub fn new(
     name: &str,
     uri: &str,

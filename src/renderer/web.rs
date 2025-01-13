@@ -8,7 +8,12 @@ use futures_util::StreamExt as _;
 
 use tokio;
 
-use crate::{renderer::EntityPath, Container, Record, Renderer};
+use crate::{
+    renderer::{EntityPath, SearchQuery},
+    Container, ContainerTransaction, Record, Renderer, SearchResult,
+    SearchResultAttribute, SearchResultLink, SearchResultRecord,
+    SearchResultTag,
+};
 
 mod files;
 use files::SEARCH_HTML;
@@ -21,6 +26,8 @@ pub struct RendererWeb {
     uri: String,
     state: Option<RendererWebState>,
 }
+
+pub struct SearchResultRendererWeb {}
 
 impl Renderer for RendererWeb {
     fn new(
@@ -81,8 +88,25 @@ impl RendererWeb {
         HttpResponse::Ok().body(SEARCH_HTML)
     }
 
-    async fn search() -> impl Responder {
-        HttpResponse::Ok().body("Ok")
+    async fn search(
+        search_query: web::Query<SearchQuery>,
+        state_data: web::Data<std::sync::Mutex<RendererWebState>>,
+    ) -> Result<impl Responder, Box<dyn std::error::Error>> {
+        let mut state = state_data.lock().unwrap();
+        let search_results = state.container.search(&search_query.q);
+        if search_results.is_empty() {
+            return Ok(HttpResponse::Ok().body("No results"));
+        }
+        let tx: &(dyn ContainerTransaction + '_) =
+            &*state.container.begin_transaction()?;
+        let body = search_results
+            .iter()
+            .map(|search_result| {
+                SearchResultRendererWeb::render(tx, search_result)
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        Ok(HttpResponse::Ok().body(body))
     }
 
     async fn record_get(
@@ -180,5 +204,55 @@ impl RendererWeb {
         let tx = state.container.begin_transaction()?;
         let all_records = tx.record_get_all_ids()?;
         Ok(web::Json(all_records))
+    }
+}
+
+impl SearchResultRendererWeb {
+    fn render(
+        tx: &(dyn ContainerTransaction + '_),
+        search_result: &SearchResult,
+    ) -> String {
+        match search_result {
+            SearchResult::Record(search_result_record) => {
+                Self::render_record(tx, search_result_record)
+            }
+            SearchResult::Link(search_result_link) => {
+                Self::render_link(tx, search_result_link)
+            }
+            SearchResult::Tag(search_result_tag) => {
+                Self::render_tag(tx, search_result_tag)
+            }
+            SearchResult::Attribute(search_result_attribute) => {
+                Self::render_attribute(tx, search_result_attribute)
+            }
+        }
+    }
+
+    fn render_record(
+        tx: &(dyn ContainerTransaction + '_),
+        search_result_record: &SearchResultRecord,
+    ) -> String {
+        String::from("record")
+    }
+
+    fn render_link(
+        tx: &(dyn ContainerTransaction + '_),
+        search_result_record: &SearchResultLink,
+    ) -> String {
+        String::from("link")
+    }
+
+    fn render_tag(
+        tx: &(dyn ContainerTransaction + '_),
+        search_result_record: &SearchResultTag,
+    ) -> String {
+        String::from("tag")
+    }
+
+    fn render_attribute(
+        tx: &(dyn ContainerTransaction + '_),
+        search_result_record: &SearchResultAttribute,
+    ) -> String {
+        String::from("attribute")
     }
 }
