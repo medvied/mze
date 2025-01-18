@@ -10,8 +10,8 @@ use rusqlite;
 use thiserror::Error;
 
 use crate::{
-    Container, ContainerTransaction, EntityId, Link, Record, SearchResult,
-    ENTITY_ID_START,
+    Container, ContainerTransaction, EntityId, Link, Record, SearchQuery,
+    SearchResult, SearchResultRecord, ENTITY_ID_START,
 };
 
 #[derive(Error, Debug)]
@@ -157,10 +157,6 @@ impl Container for ContainerSqlite {
             }
         }
     }
-
-    fn search(&self, _query: &str) -> Vec<SearchResult> {
-        todo!();
-    }
 }
 
 impl ContainerSqliteTransaction<'_> {
@@ -174,6 +170,21 @@ impl ContainerSqliteTransaction<'_> {
 }
 
 impl ContainerTransaction for ContainerSqliteTransaction<'_> {
+    fn search(
+        &self,
+        search_query: &SearchQuery,
+    ) -> Result<Vec<SearchResult>, Box<dyn error::Error>> {
+        Ok(self
+            .record_get_all_ids()?
+            .iter()
+            .map(|record_id| {
+                SearchResult::Record(SearchResultRecord {
+                    record_id: *record_id,
+                })
+            })
+            .collect())
+    }
+
     fn commit(self: Box<Self>) -> Result<(), Box<dyn error::Error>> {
         let result = self.tx.commit();
         match result {

@@ -145,11 +145,11 @@ pub struct Link {
 }
 
 pub struct SearchResultRecord {
-    pub eid: EntityId,
+    pub record_id: EntityId,
 }
 
 pub struct SearchResultLink {
-    pub eid: EntityId,
+    pub link_id: EntityId,
 }
 
 pub struct SearchResultTag {
@@ -171,6 +171,11 @@ pub enum SearchResult {
 pub trait ContainerTransaction {
     fn commit(self: Box<Self>) -> Result<(), Box<dyn error::Error>>;
     fn rollback(self: Box<Self>) -> Result<(), Box<dyn error::Error>>;
+
+    fn search(
+        &self,
+        search_query: &SearchQuery,
+    ) -> Result<Vec<SearchResult>, Box<dyn error::Error>>;
 
     fn tags_get(
         &self,
@@ -275,8 +280,6 @@ pub trait Container {
     fn begin_transaction(
         &mut self,
     ) -> Result<Box<dyn ContainerTransaction + '_>, Box<dyn error::Error>>;
-
-    fn search(&self, query: &str) -> Vec<SearchResult>;
 }
 
 pub trait Renderer {
