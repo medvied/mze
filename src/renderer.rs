@@ -13,7 +13,7 @@ pub struct EntityPath {
 }
 
 #[derive(Debug, serde::Deserialize)]
-pub struct SearchQuery {
+pub struct UriSearchQuery {
     pub q: String,
 }
 

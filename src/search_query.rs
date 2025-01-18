@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct SearchQuery {
     pub text: Vec<String>,
     pub tags_all: bool,

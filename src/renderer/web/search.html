@@ -58,7 +58,6 @@ window.addEventListener("load", (e) => {
 // and executing a new one
 async function updateSearchResults(e) {
 	const search_box = document.getElementsByClassName("search_box")[0];
-	const search_results = document.getElementsByClassName("search_results")[0];
 
 	const search_params = new URLSearchParams({
 		q: search_box.value,
@@ -70,7 +69,14 @@ async function updateSearchResults(e) {
 		if (!response.ok) {
 			console.error(`Error: url=${url} response.status=${response.status}`);
 		}
-		search_results.innerHTML = await response.text();
+		const json = await response.json();
+		console.log(json)
+		document
+			.getElementsByClassName("search_interpretation")[0]
+			.innerHTML = json.search_interpretation;
+		document
+			.getElementsByClassName("search_results")[0]
+			.innerHTML = json.search_result;
 	} catch (error) {
 		console.error(`Error: error.message=${error.message}`);
 	}

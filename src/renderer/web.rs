@@ -9,9 +9,9 @@ use futures_util::StreamExt as _;
 use tokio;
 
 use crate::{
-    renderer::{EntityPath, SearchQuery},
-    Container, ContainerTransaction, Record, Renderer, SearchResult,
-    SearchResultAttribute, SearchResultLink, SearchResultRecord,
+    renderer::{EntityPath, UriSearchQuery},
+    Container, ContainerTransaction, Record, Renderer, SearchQuery,
+    SearchResult, SearchResultAttribute, SearchResultLink, SearchResultRecord,
     SearchResultTag,
 };
 
@@ -28,6 +28,14 @@ pub struct RendererWeb {
 }
 
 pub struct SearchResultRendererWeb {}
+pub struct SearchQueryRendererWeb {}
+
+#[derive(Debug, serde::Serialize)]
+struct JsonSearchResult {
+    search_interpretation: String,
+    search_result: String,
+    search_stats: String,
+}
 
 impl Renderer for RendererWeb {
     fn new(
@@ -89,24 +97,27 @@ impl RendererWeb {
     }
 
     async fn search(
-        search_query: web::Query<SearchQuery>,
+        uri_search_query: web::Query<UriSearchQuery>,
         state_data: web::Data<std::sync::Mutex<RendererWebState>>,
     ) -> Result<impl Responder, Box<dyn std::error::Error>> {
         let mut state = state_data.lock().unwrap();
-        let search_results = state.container.search(&search_query.q);
-        if search_results.is_empty() {
-            return Ok(HttpResponse::Ok().body("No results"));
-        }
         let tx: &(dyn ContainerTransaction + '_) =
             &*state.container.begin_transaction()?;
-        let body = search_results
+        let search_query = SearchQuery::new(&uri_search_query.q);
+        let container_search_result = tx.search(&search_query)?;
+        let html_search_result = container_search_result
             .iter()
             .map(|search_result| {
                 SearchResultRendererWeb::render(tx, search_result)
             })
             .collect::<Vec<_>>()
             .join("\n");
-        Ok(HttpResponse::Ok().body(body))
+        let json_search_result = JsonSearchResult {
+            search_interpretation: format!("{:?}", search_query),
+            search_result: html_search_result,
+            search_stats: String::new(),
+        };
+        Ok(HttpResponse::Ok().json(json_search_result))
     }
 
     async fn record_get(
@@ -254,5 +265,14 @@ impl SearchResultRendererWeb {
         search_result_record: &SearchResultAttribute,
     ) -> String {
         String::from("attribute")
+    }
+}
+
+impl SearchQueryRendererWeb {
+    fn render(
+        tx: &(dyn ContainerTransaction + '_),
+        search_query: &SearchQuery,
+    ) -> String {
+        String::from("search_query")
     }
 }
