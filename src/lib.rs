@@ -83,6 +83,8 @@
  *    id
  *
  * TODO log debug messages and errors consistently
+ * TODO add # of containers/records/links/tags/attributes and the time to
+ * generate the page to the footer
  */
 
 // to make thread::current().id().as_u64() work
