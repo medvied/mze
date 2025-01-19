@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-use std::collections::{HashMap, HashSet};
-
 use rand::{self, distributions::DistString, Rng};
 use rand_core::{RngCore, SeedableRng};
 use rand_pcg;
@@ -59,14 +57,14 @@ impl TestRng {
     }
 }
 
-pub fn random_tags(test_rng: &mut TestRng) -> HashSet<String> {
+pub fn random_tags(test_rng: &mut TestRng) -> Vec<String> {
     let nr_tags = (test_rng.rand_u64() % 16) as usize;
     std::iter::repeat_with(|| test_rng.rand_string(16))
         .take(nr_tags)
         .collect()
 }
 
-pub fn random_attributes(test_rng: &mut TestRng) -> HashMap<String, String> {
+pub fn random_attributes(test_rng: &mut TestRng) -> Vec<(String, String)> {
     let nr_attributes = (test_rng.rand_u64() % 16) as usize;
     std::iter::repeat_with(|| {
         (test_rng.rand_string(16), test_rng.rand_string(16))

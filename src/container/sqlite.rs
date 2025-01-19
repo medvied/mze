@@ -211,7 +211,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
     fn tags_get(
         &self,
         eid: &EntityId,
-    ) -> Result<HashSet<String>, Box<dyn error::Error>> {
+    ) -> Result<Vec<String>, Box<dyn error::Error>> {
         let sql = "SELECT tag \
              FROM tags \
              WHERE \
@@ -262,13 +262,13 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 }
             }
         }
-        Ok(tags)
+        Ok(tags.into_iter().collect())
     }
 
     fn tags_put(
         &mut self,
         eid: &EntityId,
-        tags: &HashSet<String>,
+        tags: &[String],
     ) -> Result<(), Box<dyn error::Error>> {
         let sql = "INSERT INTO tags(id, tag) \
                    VALUES(?, ?);";
@@ -333,7 +333,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
     fn attributes_get(
         &self,
         eid: &EntityId,
-    ) -> Result<HashMap<String, String>, Box<dyn error::Error>> {
+    ) -> Result<Vec<(String, String)>, Box<dyn error::Error>> {
         let sql = "SELECT key, value \
              FROM attributes \
              WHERE \
@@ -400,13 +400,13 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 }
             }
         }
-        Ok(attributes)
+        Ok(attributes.into_iter().collect())
     }
 
     fn attributes_put(
         &mut self,
         eid: &EntityId,
-        attributes: &HashMap<String, String>,
+        attributes: &[(String, String)],
     ) -> Result<(), Box<dyn error::Error>> {
         let sql = "INSERT INTO attributes(id, key, value) \
                    VALUES(?, ?, ?);";
@@ -838,6 +838,16 @@ mod tests {
     use super::*;
     use crate::helpers;
 
+    fn tags2hash_set(tags: &[String]) -> HashSet<&String> {
+        HashSet::<&String>::from_iter(tags.iter())
+    }
+
+    fn attributes2hash_map(
+        attributes: &[(String, String)],
+    ) -> HashMap<&String, &String> {
+        attributes.iter().map(|(s1, s2)| (s1, s2)).collect()
+    }
+
     #[test]
     fn smoke_tags() {
         crate::app::init();
@@ -855,7 +865,7 @@ mod tests {
         tx.tags_put(&eid, &tags).unwrap();
 
         let tags1 = tx.tags_get(&eid).unwrap();
-        assert_eq!(tags1, tags);
+        assert_eq!(tags2hash_set(&tags1), tags2hash_set(&tags));
 
         tx.tags_del(&eid).unwrap();
 
@@ -883,7 +893,10 @@ mod tests {
         tx.attributes_put(&eid, &attributes).unwrap();
 
         let attributes1 = tx.attributes_get(&eid).unwrap();
-        assert_eq!(attributes1, attributes);
+        assert_eq!(
+            attributes2hash_map(&attributes1),
+            attributes2hash_map(&attributes),
+        );
 
         tx.attributes_del(&eid).unwrap();
 
@@ -912,7 +925,15 @@ mod tests {
         assert_eq!(eid1, eid);
 
         let record1 = tx.record_get(&eid).unwrap().unwrap();
-        assert_eq!(record1, record);
+        assert_eq!(
+            tags2hash_set(&record1.ta.tags),
+            tags2hash_set(&record.ta.tags)
+        );
+        assert_eq!(
+            attributes2hash_map(&record1.ta.attributes),
+            attributes2hash_map(&record.ta.attributes)
+        );
+        assert_eq!(record1.data, record.data);
 
         let all_ids = tx.record_get_all_ids().unwrap();
         assert_eq!(all_ids.len(), 1);
@@ -964,7 +985,16 @@ mod tests {
         assert_eq!(eid1, eid);
 
         let link1 = tx.link_get(&eid).unwrap().unwrap();
-        assert_eq!(link1, link);
+        assert_eq!(
+            tags2hash_set(&link1.ta.tags),
+            tags2hash_set(&link.ta.tags)
+        );
+        assert_eq!(
+            attributes2hash_map(&link1.ta.attributes),
+            attributes2hash_map(&link.ta.attributes)
+        );
+        assert_eq!(link1.from, link.from);
+        assert_eq!(link1.to, link.to);
 
         let all_ids = tx.link_get_all_ids().unwrap();
         assert_eq!(all_ids.len(), 1, "all_ids={:?}", all_ids);

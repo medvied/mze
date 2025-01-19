@@ -103,10 +103,7 @@ pub use search_query::SearchQuery;
 // to the containing module
 pub mod helpers;
 
-use std::{
-    collections::{HashMap, HashSet},
-    error,
-};
+use std::error;
 
 #[derive(
     Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize,
@@ -127,8 +124,8 @@ pub const ENTITY_ID_START: EntityId = EntityId { id: 10000 };
 
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct TagsAndAttributes {
-    pub tags: HashSet<String>,
-    pub attributes: HashMap<String, String>,
+    pub tags: Vec<String>,
+    pub attributes: Vec<(String, String)>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -167,7 +164,6 @@ pub enum SearchResult {
     Attribute(SearchResultAttribute),
 }
 
-/// TODO consider Vec<_> instead of HashSet<_> and vice versa
 pub trait ContainerTransaction {
     fn commit(self: Box<Self>) -> Result<(), Box<dyn error::Error>>;
     fn rollback(self: Box<Self>) -> Result<(), Box<dyn error::Error>>;
@@ -180,11 +176,11 @@ pub trait ContainerTransaction {
     fn tags_get(
         &self,
         eid: &EntityId,
-    ) -> Result<HashSet<String>, Box<dyn error::Error>>;
+    ) -> Result<Vec<String>, Box<dyn error::Error>>;
     fn tags_put(
         &mut self,
         eid: &EntityId,
-        tags: &HashSet<String>,
+        tags: &[String],
     ) -> Result<(), Box<dyn error::Error>>;
     fn tags_del(
         &mut self,
@@ -194,11 +190,11 @@ pub trait ContainerTransaction {
     fn attributes_get(
         &self,
         eid: &EntityId,
-    ) -> Result<HashMap<String, String>, Box<dyn error::Error>>;
+    ) -> Result<Vec<(String, String)>, Box<dyn error::Error>>;
     fn attributes_put(
         &mut self,
         eid: &EntityId,
-        attributes: &HashMap<String, String>,
+        attributes: &[(String, String)],
     ) -> Result<(), Box<dyn error::Error>>;
     fn attributes_del(
         &mut self,
