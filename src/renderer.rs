@@ -6,10 +6,16 @@ use crate::{Container, EntityId, Renderer};
 
 pub mod web;
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize)]
 pub struct EntityPath {
     pub container_id: Option<u64>,
     pub id: u64,
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct EntitiesPath {
+    pub container_id: Option<u64>,
+    pub id: String,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -35,5 +41,21 @@ impl EntityPath {
 
     pub fn get_id(&self) -> EntityId {
         EntityId::new(self.id)
+    }
+}
+
+impl EntitiesPath {
+    pub fn get_entity_ids(
+        &self,
+    ) -> Result<Vec<EntityId>, Box<dyn error::Error>> {
+        let ids: Result<Vec<u64>, _> =
+            self.id.split(",").map(|s| s.parse::<u64>()).collect();
+        let ids: Vec<EntityId> =
+            ids?.into_iter().map(|id| EntityId { id }).collect();
+        if ids.is_empty() {
+            Err("the list of ids is empty".into())
+        } else {
+            Ok(ids)
+        }
     }
 }

@@ -1,4 +1,4 @@
-use std::error;
+use std::{collections::HashMap, error};
 
 use actix_web::{
     body::EitherBody, middleware, web, App, Either, HttpRequest, HttpResponse,
@@ -9,10 +9,10 @@ use futures_util::StreamExt as _;
 use tokio;
 
 use crate::{
-    renderer::{EntityPath, UriSearchQuery},
-    Container, ContainerTransaction, Record, Renderer, SearchQuery,
+    renderer::{EntitiesPath, EntityPath, UriSearchQuery},
+    Container, ContainerTransaction, EntityId, Record, Renderer, SearchQuery,
     SearchResult, SearchResultAttribute, SearchResultLink, SearchResultRecord,
-    SearchResultTag,
+    SearchResultTag, TagsAndAttributes,
 };
 
 mod files;
@@ -35,6 +35,20 @@ struct JsonSearchResult {
     search_interpretation: String,
     search_result: String,
     search_stats: String,
+}
+
+#[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
+struct JsonRecord {
+    id: Option<u64>,
+    tags: Vec<String>,
+    attributes: HashMap<String, String>,
+    data: Option<String>,
+}
+
+#[derive(Debug, serde::Serialize)]
+enum JsonPutRecordOrLinkResponse {
+    Success { id: u64 },
+    Error { error_message: String },
 }
 
 impl Renderer for RendererWeb {
@@ -73,8 +87,10 @@ impl RendererWeb {
                 .route("/test", web::get().to(Self::test))
                 .route("/", web::get().to(Self::search_html))
                 .route("/search", web::get().to(Self::search))
+                .route("/record", web::put().to(Self::put_record))
+                .route("/record", web::get().to(Self::get_record))
                 .service(
-                    web::scope("/record")
+                    web::scope("/record1")
                         .route("/data", web::get().to(Self::record_data_get))
                         .route("/data", web::put().to(Self::record_data_put))
                         .route("/tags", web::get().to(Self::record_tags_get))
@@ -122,33 +138,69 @@ impl RendererWeb {
         }))
     }
 
+    async fn put_record(
+        json_put_records: web::Json<Vec<JsonRecord>>,
+        state_data: web::Data<std::sync::Mutex<RendererWebState>>,
+    ) -> Result<impl Responder, Box<dyn std::error::Error>> {
+        let mut state = state_data.lock().unwrap();
+        let mut tx = state.container.begin_transaction()?;
+        let mut response_vec = Vec::new();
+        for json_put_record in json_put_records.iter() {
+            let (eid, record) = json_put_record.get_id_and_record();
+            let result = tx.record_put(&eid, &record);
+            response_vec.push(match result {
+                Ok(eid) => JsonPutRecordOrLinkResponse::Success { id: eid.id },
+                Err(err) => JsonPutRecordOrLinkResponse::Error {
+                    error_message: err.to_string(),
+                },
+            });
+        }
+        tx.commit()?;
+        Ok(HttpResponse::Ok().json(response_vec))
+    }
+
+    async fn get_record(
+        entities_path: web::Query<EntitiesPath>,
+        state_data: web::Data<std::sync::Mutex<RendererWebState>>,
+    ) -> Result<impl Responder, Box<dyn std::error::Error>> {
+        let mut state = state_data.lock().unwrap();
+        let tx = state.container.begin_transaction()?;
+        let records: Result<Vec<_>, _> = entities_path
+            .get_entity_ids()?
+            .into_iter()
+            .map(|eid| {
+                tx.record_get(&eid).map(|record| {
+                    JsonRecord::from_eid_and_record(&eid, record)
+                })
+            })
+            .collect();
+        Ok(HttpResponse::Ok().json(records?))
+    }
+
     async fn record_get(
         entity_path: web::Query<EntityPath>,
         state_data: web::Data<std::sync::Mutex<RendererWebState>>,
-    ) -> Result<Result<Record, HttpResponse>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<Record>, Box<dyn std::error::Error>> {
         let mut state = state_data.lock().unwrap();
         let tx = state.container.begin_transaction()?;
         let eid = entity_path.get_id();
         let record = tx.record_get(&eid)?;
-        if record.is_none() {
-            return Ok(Err(HttpResponse::NotFound().body(format!(
-                "Record not found: entity_path={entity_path:?}"
-            ))));
-        }
-        Ok(Ok(record.unwrap()))
+        Ok(record)
     }
 
     async fn record_data_get(
         entity_path: web::Query<EntityPath>,
         state_data: web::Data<std::sync::Mutex<RendererWebState>>,
     ) -> Result<impl Responder, Box<dyn std::error::Error>> {
-        let result = Self::record_get(entity_path, state_data).await?;
+        let result = Self::record_get(entity_path.clone(), state_data).await?;
         Ok(match result {
-            Ok(record) => {
+            Some(record) => {
                 let data = record.data.unwrap_or_default();
                 HttpResponse::Ok().body(data)
             }
-            Err(response) => response,
+            None => HttpResponse::NotFound().body(format!(
+                "Record not found: entity_path={entity_path:?}"
+            )),
         })
     }
 
@@ -160,12 +212,14 @@ impl RendererWeb {
         Either<HttpResponse<EitherBody<String>>, impl Responder>,
         Box<dyn std::error::Error>,
     > {
-        let result = Self::record_get(entity_path, state_data).await?;
+        let result = Self::record_get(entity_path.clone(), state_data).await?;
         Ok(match result {
-            Ok(record) => {
+            Some(record) => {
                 Either::Left(web::Json(&record.ta.tags).respond_to(&req))
             }
-            Err(response) => Either::Right(response),
+            None => Either::Right(HttpResponse::NotFound().body(format!(
+                "Record not found: entity_path={entity_path:?}"
+            ))),
         })
     }
 
@@ -177,12 +231,14 @@ impl RendererWeb {
         Either<HttpResponse<EitherBody<String>>, impl Responder>,
         Box<dyn std::error::Error>,
     > {
-        let result = Self::record_get(entity_path, state_data).await?;
+        let result = Self::record_get(entity_path.clone(), state_data).await?;
         Ok(match result {
-            Ok(record) => {
+            Some(record) => {
                 Either::Left(web::Json(&record.ta.attributes).respond_to(&req))
             }
-            Err(response) => Either::Right(response),
+            None => Either::Right(HttpResponse::NotFound().body(format!(
+                "Record not found: entity_path={entity_path:?}"
+            ))),
         })
     }
 
@@ -276,5 +332,39 @@ impl SearchQueryRendererWeb {
         search_query: &SearchQuery,
     ) -> String {
         format!("{:?}", search_query)
+    }
+}
+
+impl JsonRecord {
+    fn from_eid_and_record(
+        eid: &EntityId,
+        record: Option<Record>,
+    ) -> Option<Self> {
+        match record {
+            Some(record) => Some(JsonRecord {
+                id: Some(eid.id),
+                tags: record.ta.tags,
+                attributes: record.ta.attributes.into_iter().collect(),
+                data: record.data.map(|v| {
+                    // XXX if data couldn't be converted to string we have
+                    // XXX a data loss here
+                    // TODO handle properly (base64 or something like that)
+                    String::from_utf8(v).unwrap_or_else(|err| err.to_string())
+                }),
+            }),
+            None => None,
+        }
+    }
+
+    fn get_id_and_record(&self) -> (Option<EntityId>, Record) {
+        let eid = self.id.map(|id| EntityId { id });
+        let record = Record {
+            ta: TagsAndAttributes {
+                tags: self.tags.clone(),
+                attributes: self.attributes.clone().into_iter().collect(),
+            },
+            data: self.data.clone().map(|s| s.as_bytes().to_vec()),
+        };
+        (eid, record)
     }
 }
