@@ -172,7 +172,7 @@ impl ContainerSqliteTransaction<'_> {
 impl ContainerTransaction for ContainerSqliteTransaction<'_> {
     fn search(
         &self,
-        search_query: &SearchQuery,
+        _search_query: &SearchQuery,
     ) -> Result<Vec<SearchResult>, Box<dyn error::Error>> {
         Ok(self
             .record_get_all_ids()?

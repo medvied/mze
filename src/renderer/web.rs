@@ -242,29 +242,29 @@ impl SearchResultRendererWeb {
     }
 
     fn render_record(
-        tx: &(dyn ContainerTransaction + '_),
-        search_result_record: &SearchResultRecord,
+        _tx: &(dyn ContainerTransaction + '_),
+        _search_result_record: &SearchResultRecord,
     ) -> String {
         String::from("record")
     }
 
     fn render_link(
-        tx: &(dyn ContainerTransaction + '_),
-        search_result_record: &SearchResultLink,
+        _tx: &(dyn ContainerTransaction + '_),
+        _search_result_record: &SearchResultLink,
     ) -> String {
         String::from("link")
     }
 
     fn render_tag(
-        tx: &(dyn ContainerTransaction + '_),
-        search_result_record: &SearchResultTag,
+        _tx: &(dyn ContainerTransaction + '_),
+        _search_result_record: &SearchResultTag,
     ) -> String {
         String::from("tag")
     }
 
     fn render_attribute(
-        tx: &(dyn ContainerTransaction + '_),
-        search_result_record: &SearchResultAttribute,
+        _tx: &(dyn ContainerTransaction + '_),
+        _search_result_record: &SearchResultAttribute,
     ) -> String {
         String::from("attribute")
     }
