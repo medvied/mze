@@ -105,6 +105,8 @@ impl RendererWeb {
             &*state.container.begin_transaction()?;
         let search_query = SearchQuery::new(&uri_search_query.q);
         let container_search_result = tx.search(&search_query)?;
+        let search_interpretation =
+            SearchQueryRendererWeb::render(tx, &search_query);
         let html_search_result = container_search_result
             .iter()
             .map(|search_result| {
@@ -113,7 +115,7 @@ impl RendererWeb {
             .collect::<Vec<_>>()
             .join("\n");
         let json_search_result = JsonSearchResult {
-            search_interpretation: format!("{:?}", search_query),
+            search_interpretation,
             search_result: html_search_result,
             search_stats: String::new(),
         };
@@ -270,9 +272,9 @@ impl SearchResultRendererWeb {
 
 impl SearchQueryRendererWeb {
     fn render(
-        tx: &(dyn ContainerTransaction + '_),
+        _tx: &(dyn ContainerTransaction + '_),
         search_query: &SearchQuery,
     ) -> String {
-        String::from("search_query")
+        format!("{:?}", search_query)
     }
 }
