@@ -128,7 +128,7 @@ pub const ENTITY_ID_START: EntityId = EntityId { id: 10000 };
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct TagsAndAttributes {
     pub tags: HashSet<String>,
-    pub attrs: HashMap<String, String>,
+    pub attributes: HashMap<String, String>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -245,7 +245,7 @@ pub trait ContainerTransaction {
     ) -> Result<TagsAndAttributes, Box<dyn error::Error>> {
         Ok(TagsAndAttributes {
             tags: self.tags_get(eid)?,
-            attrs: self.attrs_get(eid)?,
+            attributes: self.attrs_get(eid)?,
         })
     }
 
@@ -255,7 +255,7 @@ pub trait ContainerTransaction {
         ta: &TagsAndAttributes,
     ) -> Result<(), Box<dyn error::Error>> {
         self.tags_put(eid, &ta.tags)?;
-        self.attrs_put(eid, &ta.attrs)
+        self.attrs_put(eid, &ta.attributes)
     }
 
     fn tags_and_attrs_del(

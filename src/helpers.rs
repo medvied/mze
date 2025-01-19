@@ -78,7 +78,7 @@ pub fn random_attrs(test_rng: &mut TestRng) -> HashMap<String, String> {
 pub fn random_tags_and_attrs(test_rng: &mut TestRng) -> TagsAndAttributes {
     TagsAndAttributes {
         tags: random_tags(test_rng),
-        attrs: random_attrs(test_rng),
+        attributes: random_attrs(test_rng),
     }
 }
 

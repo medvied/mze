@@ -180,7 +180,7 @@ impl RendererWeb {
         let result = Self::record_get(entity_path, state_data).await?;
         Ok(match result {
             Ok(record) => {
-                Either::Left(web::Json(&record.ta.attrs).respond_to(&req))
+                Either::Left(web::Json(&record.ta.attributes).respond_to(&req))
             }
             Err(response) => Either::Right(response),
         })
