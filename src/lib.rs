@@ -126,20 +126,20 @@ pub const ENTITY_ID_START: EntityId = EntityId { id: 10000 };
 // automatically)
 
 #[derive(Debug, Default, Eq, PartialEq)]
-pub struct TagsAndAttrs {
+pub struct TagsAndAttributes {
     pub tags: HashSet<String>,
     pub attrs: HashMap<String, String>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Record {
-    pub ta: TagsAndAttrs,
+    pub ta: TagsAndAttributes,
     pub data: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Link {
-    pub ta: TagsAndAttrs,
+    pub ta: TagsAndAttributes,
     pub from: Vec<EntityId>,
     pub to: Vec<EntityId>,
 }
@@ -242,8 +242,8 @@ pub trait ContainerTransaction {
     fn tags_and_attrs_get(
         &self,
         eid: &EntityId,
-    ) -> Result<TagsAndAttrs, Box<dyn error::Error>> {
-        Ok(TagsAndAttrs {
+    ) -> Result<TagsAndAttributes, Box<dyn error::Error>> {
+        Ok(TagsAndAttributes {
             tags: self.tags_get(eid)?,
             attrs: self.attrs_get(eid)?,
         })
@@ -252,7 +252,7 @@ pub trait ContainerTransaction {
     fn tags_and_attrs_put(
         &mut self,
         eid: &EntityId,
-        ta: &TagsAndAttrs,
+        ta: &TagsAndAttributes,
     ) -> Result<(), Box<dyn error::Error>> {
         self.tags_put(eid, &ta.tags)?;
         self.attrs_put(eid, &ta.attrs)

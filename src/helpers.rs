@@ -20,7 +20,7 @@ use rand::{self, distributions::DistString, Rng};
 use rand_core::{RngCore, SeedableRng};
 use rand_pcg;
 
-use crate::{EntityId, Record, TagsAndAttrs};
+use crate::{EntityId, Record, TagsAndAttributes};
 
 pub struct TestRng {
     rng: rand_pcg::Pcg64Mcg,
@@ -75,8 +75,8 @@ pub fn random_attrs(test_rng: &mut TestRng) -> HashMap<String, String> {
     .collect()
 }
 
-pub fn random_tags_and_attrs(test_rng: &mut TestRng) -> TagsAndAttrs {
-    TagsAndAttrs {
+pub fn random_tags_and_attrs(test_rng: &mut TestRng) -> TagsAndAttributes {
+    TagsAndAttributes {
         tags: random_tags(test_rng),
         attrs: random_attrs(test_rng),
     }
