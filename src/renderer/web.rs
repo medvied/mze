@@ -107,19 +107,19 @@ impl RendererWeb {
         let container_search_result = tx.search(&search_query)?;
         let search_interpretation =
             SearchQueryRendererWeb::render(tx, &search_query);
-        let html_search_result = container_search_result
+        let search_result = container_search_result
             .iter()
             .map(|search_result| {
                 SearchResultRendererWeb::render(tx, search_result)
             })
             .collect::<Vec<_>>()
             .join("\n");
-        let json_search_result = JsonSearchResult {
+        let search_stats = String::new();
+        Ok(HttpResponse::Ok().json(JsonSearchResult {
             search_interpretation,
-            search_result: html_search_result,
-            search_stats: String::new(),
-        };
-        Ok(HttpResponse::Ok().json(json_search_result))
+            search_result,
+            search_stats,
+        }))
     }
 
     async fn record_get(
