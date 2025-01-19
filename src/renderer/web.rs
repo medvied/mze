@@ -78,7 +78,7 @@ impl RendererWeb {
                         .route("/data", web::get().to(Self::record_data_get))
                         .route("/data", web::put().to(Self::record_data_put))
                         .route("/tags", web::get().to(Self::record_tags_get))
-                        .route("/attrs", web::get().to(Self::record_attrs_get))
+                        .route("/attributes", web::get().to(Self::record_attributes_get))
                         .route("all", web::get().to(Self::record_all_get)),
                 )
         })
@@ -169,7 +169,7 @@ impl RendererWeb {
         })
     }
 
-    async fn record_attrs_get(
+    async fn record_attributes_get(
         req: HttpRequest,
         entity_path: web::Query<EntityPath>,
         state_data: web::Data<std::sync::Mutex<RendererWebState>>,

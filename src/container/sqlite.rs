@@ -39,9 +39,10 @@ pub enum ContainerSqliteError {
     #[error("duplicate tags in container: eid={eid:?} tag={tag}")]
     DuplicateTagsInContainer { eid: EntityId, tag: String },
     #[error(
-        "duplicate attrs in container: eid={eid:?} key={key} value={value}"
+        "duplicate attributes in container: \
+         eid={eid:?} key={key} value={value}"
     )]
-    DuplicateAttrsInContainer {
+    DuplicateAttributesInContainer {
         eid: EntityId,
         key: String,
         value: String,
@@ -111,7 +112,7 @@ impl Container for ContainerSqlite {
                 id INTEGER, \
                 tag TEXT\
             ) STRICT;",
-            "CREATE TABLE attrs(\
+            "CREATE TABLE attributes(\
                 id INTEGER, \
                 key TEXT, \
                 value TEXT\
@@ -128,7 +129,7 @@ impl Container for ContainerSqlite {
     fn destroy(&self) -> Result<(), Box<dyn error::Error>> {
         let statements: &[&str] = &[
             "DROP TABLE links;",
-            "DROP TABLE attrs;",
+            "DROP TABLE attributes;",
             "DROP TABLE tags;",
             "DROP TABLE records;",
         ];
@@ -329,12 +330,12 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         Ok(())
     }
 
-    fn attrs_get(
+    fn attributes_get(
         &self,
         eid: &EntityId,
     ) -> Result<HashMap<String, String>, Box<dyn error::Error>> {
         let sql = "SELECT key, value \
-             FROM attrs \
+             FROM attributes \
              WHERE \
              id = ?\
              ;";
@@ -360,7 +361,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 ContainerSqliteError::SqliteQueryMapFailed { err },
             ));
         }
-        let mut attrs = HashMap::new();
+        let mut attributes = HashMap::new();
         for row in rows.unwrap() {
             match row {
                 Ok((key, value)) => {
@@ -378,10 +379,11 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                     let value = value.unwrap();
                     // TODO find a way to not to clone the key and value
                     // for the error message
-                    let old = attrs.insert(key.clone(), value.clone());
+                    let old = attributes.insert(key.clone(), value.clone());
                     if old.is_some() {
                         return Err(Box::new(
-                            ContainerSqliteError::DuplicateAttrsInContainer {
+                            ContainerSqliteError::
+                            DuplicateAttributesInContainer {
                                 eid: *eid,
                                 key,
                                 value,
@@ -398,15 +400,15 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 }
             }
         }
-        Ok(attrs)
+        Ok(attributes)
     }
 
-    fn attrs_put(
+    fn attributes_put(
         &mut self,
         eid: &EntityId,
-        attrs: &HashMap<String, String>,
+        attributes: &HashMap<String, String>,
     ) -> Result<(), Box<dyn error::Error>> {
-        let sql = "INSERT INTO attrs(id, key, value) \
+        let sql = "INSERT INTO attributes(id, key, value) \
                    VALUES(?, ?, ?);";
         let statement = self.tx.prepare(sql);
         let mut statement = match statement {
@@ -420,7 +422,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 ))
             }
         };
-        for (key, value) in attrs {
+        for (key, value) in attributes {
             let nr_inserted = statement.execute((eid.id() as i64, key, value));
             if let Err(err) = nr_inserted {
                 return Err(Box::new(
@@ -434,11 +436,11 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         Ok(())
     }
 
-    fn attrs_del(
+    fn attributes_del(
         &mut self,
         eid: &EntityId,
     ) -> Result<(), Box<dyn error::Error>> {
-        let sql = "DELETE FROM attrs WHERE \
+        let sql = "DELETE FROM attributes WHERE \
                    id = ?\
                    ;";
         let statement = self.tx.prepare(sql);
@@ -463,7 +465,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             ));
         }
         debug!(
-            "attrs_del(): eid={eid:?} nr_deleted={}",
+            "attributes_del(): eid={eid:?} nr_deleted={}",
             nr_deleted.unwrap()
         );
         Ok(())
@@ -517,7 +519,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             }
         };
         let record = Record {
-            ta: self.tags_and_attrs_get(eid)?,
+            ta: self.tags_and_attributes_get(eid)?,
             data: Some(data),
         };
         Ok(Some(record))
@@ -532,7 +534,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             None => self.eid_stored_max()?.unwrap_or(ENTITY_ID_START),
             Some(eid) => *eid,
         };
-        self.tags_and_attrs_put(&eid, &record.ta)?;
+        self.tags_and_attributes_put(&eid, &record.ta)?;
         let sql = "INSERT INTO records(id, data) \
                    VALUES(?, ?);";
         let statement = self.tx.prepare(sql);
@@ -572,7 +574,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         &mut self,
         eid: &EntityId,
     ) -> Result<bool, Box<dyn error::Error>> {
-        self.tags_and_attrs_del(eid)?;
+        self.tags_and_attributes_del(eid)?;
         let sql = "DELETE FROM records WHERE \
                    id = ?\
                    ;";
@@ -695,7 +697,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             }
         }
         let link = Link {
-            ta: self.tags_and_attrs_get(eid)?,
+            ta: self.tags_and_attributes_get(eid)?,
             from,
             to,
         };
@@ -711,7 +713,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             None => self.eid_stored_max()?.unwrap_or(ENTITY_ID_START),
             Some(eid) => *eid,
         };
-        self.tags_and_attrs_put(&eid, &link.ta)?;
+        self.tags_and_attributes_put(&eid, &link.ta)?;
         let sql = "INSERT INTO links(id, is_to, record_id) \
                    VALUES(?, ?, ?);";
         let statement = self.tx.prepare(sql);
@@ -759,7 +761,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         &mut self,
         eid: &EntityId,
     ) -> Result<bool, Box<dyn error::Error>> {
-        self.tags_and_attrs_del(eid)?;
+        self.tags_and_attributes_del(eid)?;
         let sql = "DELETE FROM links WHERE \
                    id = ?\
                    ;";
@@ -865,7 +867,7 @@ mod tests {
     }
 
     #[test]
-    fn smoke_attrs() {
+    fn smoke_attributes() {
         crate::app::init();
 
         let mut container = ContainerSqlite::new("").unwrap();
@@ -874,19 +876,19 @@ mod tests {
         let eid = helpers::random_entity_id(&mut test_rng);
         let mut tx = container.begin_transaction().unwrap();
 
-        let attrs1 = tx.attrs_get(&eid).unwrap();
-        assert!(attrs1.is_empty());
+        let attributes1 = tx.attributes_get(&eid).unwrap();
+        assert!(attributes1.is_empty());
 
-        let attrs = helpers::random_attrs(&mut test_rng);
-        tx.attrs_put(&eid, &attrs).unwrap();
+        let attributes = helpers::random_attributes(&mut test_rng);
+        tx.attributes_put(&eid, &attributes).unwrap();
 
-        let attrs1 = tx.attrs_get(&eid).unwrap();
-        assert_eq!(attrs1, attrs);
+        let attributes1 = tx.attributes_get(&eid).unwrap();
+        assert_eq!(attributes1, attributes);
 
-        tx.attrs_del(&eid).unwrap();
+        tx.attributes_del(&eid).unwrap();
 
-        let attrs1 = tx.attrs_get(&eid).unwrap();
-        assert!(attrs1.is_empty());
+        let attributes1 = tx.attributes_get(&eid).unwrap();
+        assert!(attributes1.is_empty());
 
         tx.commit().unwrap();
         container.destroy().unwrap();
@@ -953,7 +955,7 @@ mod tests {
         assert!(all_ids.is_empty());
 
         let link = Link {
-            ta: helpers::random_tags_and_attrs(&mut test_rng),
+            ta: helpers::random_tags_and_attributes(&mut test_rng),
             from: vec![record_eid1],
             to: vec![record_eid2],
         };

@@ -30,7 +30,7 @@
  * - link to and from are unordered sets
  * - there may be more than 1 link between 2 records
  * - tags: unordered set of UTF-8 strings
- * - attrs: unordered key:value map, both key and value are UTF8 strings
+ * - attributes: unordered key:value map, both key and value are UTF8 strings
  * - types for:
  *
  *   - tags
@@ -191,16 +191,16 @@ pub trait ContainerTransaction {
         eid: &EntityId,
     ) -> Result<(), Box<dyn error::Error>>;
 
-    fn attrs_get(
+    fn attributes_get(
         &self,
         eid: &EntityId,
     ) -> Result<HashMap<String, String>, Box<dyn error::Error>>;
-    fn attrs_put(
+    fn attributes_put(
         &mut self,
         eid: &EntityId,
-        attrs: &HashMap<String, String>,
+        attributes: &HashMap<String, String>,
     ) -> Result<(), Box<dyn error::Error>>;
-    fn attrs_del(
+    fn attributes_del(
         &mut self,
         eid: &EntityId,
     ) -> Result<(), Box<dyn error::Error>>;
@@ -239,31 +239,31 @@ pub trait ContainerTransaction {
     fn link_get_all_ids(&self)
         -> Result<Vec<EntityId>, Box<dyn error::Error>>;
 
-    fn tags_and_attrs_get(
+    fn tags_and_attributes_get(
         &self,
         eid: &EntityId,
     ) -> Result<TagsAndAttributes, Box<dyn error::Error>> {
         Ok(TagsAndAttributes {
             tags: self.tags_get(eid)?,
-            attributes: self.attrs_get(eid)?,
+            attributes: self.attributes_get(eid)?,
         })
     }
 
-    fn tags_and_attrs_put(
+    fn tags_and_attributes_put(
         &mut self,
         eid: &EntityId,
         ta: &TagsAndAttributes,
     ) -> Result<(), Box<dyn error::Error>> {
         self.tags_put(eid, &ta.tags)?;
-        self.attrs_put(eid, &ta.attributes)
+        self.attributes_put(eid, &ta.attributes)
     }
 
-    fn tags_and_attrs_del(
+    fn tags_and_attributes_del(
         &mut self,
         eid: &EntityId,
     ) -> Result<(), Box<dyn error::Error>> {
         self.tags_del(eid)?;
-        self.attrs_del(eid)
+        self.attributes_del(eid)
     }
 }
 

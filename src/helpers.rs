@@ -66,25 +66,27 @@ pub fn random_tags(test_rng: &mut TestRng) -> HashSet<String> {
         .collect()
 }
 
-pub fn random_attrs(test_rng: &mut TestRng) -> HashMap<String, String> {
-    let nr_attrs = (test_rng.rand_u64() % 16) as usize;
+pub fn random_attributes(test_rng: &mut TestRng) -> HashMap<String, String> {
+    let nr_attributes = (test_rng.rand_u64() % 16) as usize;
     std::iter::repeat_with(|| {
         (test_rng.rand_string(16), test_rng.rand_string(16))
     })
-    .take(nr_attrs)
+    .take(nr_attributes)
     .collect()
 }
 
-pub fn random_tags_and_attrs(test_rng: &mut TestRng) -> TagsAndAttributes {
+pub fn random_tags_and_attributes(
+    test_rng: &mut TestRng,
+) -> TagsAndAttributes {
     TagsAndAttributes {
         tags: random_tags(test_rng),
-        attributes: random_attrs(test_rng),
+        attributes: random_attributes(test_rng),
     }
 }
 
 pub fn random_record(test_rng: &mut TestRng) -> Record {
     Record {
-        ta: random_tags_and_attrs(test_rng),
+        ta: random_tags_and_attributes(test_rng),
         data: if test_rng.rand_range(8) == 0 {
             None
         } else {
