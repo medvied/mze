@@ -11,7 +11,7 @@ use thiserror::Error;
 
 use crate::{
     Container, ContainerTransaction, EntityId, Link, Record, SearchQuery,
-    SearchResult, SearchResultRecord, ENTITY_ID_START,
+    SearchResult, SearchResultRecord, SearchResultTag, ENTITY_ID_START,
 };
 
 #[derive(Error, Debug)]
@@ -169,22 +169,48 @@ impl ContainerSqliteTransaction<'_> {
             .map(|eid| eid.add_1())
             .unwrap_or(ENTITY_ID_START))
     }
+
+    fn tags_all(&self) -> Vec<String> {
+        Vec::new()
+    }
+
+    fn tags_search(&self, _substring: &str) -> Vec<String> {
+        Vec::new()
+    }
 }
 
 impl ContainerTransaction for ContainerSqliteTransaction<'_> {
     fn search(
         &self,
-        _search_query: &SearchQuery,
+        search_query: &SearchQuery,
     ) -> Result<Vec<SearchResult>, Box<dyn error::Error>> {
-        Ok(self
-            .record_get_all_ids()?
-            .iter()
-            .map(|record_id| {
+        if search_query.is_empty {
+            return Ok(Vec::new());
+        }
+        let mut vec_results = Vec::new();
+        let mut tags;
+        if search_query.tags_all {
+            tags = self.tags_all();
+        } else {
+            tags = Vec::new();
+            for tag in &search_query.tags {
+                tags.extend(self.tags_search(tag));
+            }
+        }
+        vec_results.extend(
+            HashSet::<String>::from_iter(tags)
+                .into_iter()
+                .map(|tag| SearchResult::Tag(SearchResultTag { tag })),
+        );
+        // TODO add all records to the results for now
+        vec_results.extend(self.record_get_all_ids()?.iter().map(
+            |record_id| {
                 SearchResult::Record(SearchResultRecord {
                     record_id: *record_id,
                 })
-            })
-            .collect())
+            },
+        ));
+        Ok(vec_results)
     }
 
     fn commit(self: Box<Self>) -> Result<(), Box<dyn error::Error>> {
