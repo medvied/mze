@@ -52,7 +52,7 @@
  *    logical AND between every pair of words)
  *  - search() looks for every word from the query in the text
  *  - search() looks for every word that starts with `#`: it removes the `#`
- *    and then searches for the string in the tags as awell
+ *    and then searches for the string in the tags as well
  *  - search() looks for every word that has `=` after `#`: it removes `#`,
  *    splits the remaining string into key and value on the first `=` and then
  *    searches for the key=value in the attributes
