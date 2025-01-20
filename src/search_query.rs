@@ -1,5 +1,6 @@
 #[derive(Debug)]
 pub struct SearchQuery {
+    pub is_empty: bool,
     pub text: Vec<String>,
     pub tags_all: bool,
     pub tags: Vec<String>,
@@ -13,6 +14,7 @@ impl SearchQuery {
     pub fn new(query: &str) -> SearchQuery {
         let words: Vec<_> = query.split_whitespace().collect();
         SearchQuery {
+            is_empty: words.is_empty(),
             text: words.iter().map(|word| String::from(*word)).collect(),
             tags_all: words.iter().any(|word| *word == "#"),
             tags: words
