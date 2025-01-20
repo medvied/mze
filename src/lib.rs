@@ -60,11 +60,13 @@
  *    ids
  *  - TODO `from:$(search query)`, `to:$(search query)` - look for links
  *    that have records from the search query
+ *  - TODO $variable, $variable=value - configure search variables
  *
  *  Another way to describe search query format
  *
- *  - # - all tags
- *  - #= - all attributes
+ *  - # - all tags (only for the tag results, for Records/links the rest of the
+ *    tags query is used if present)
+ *  - #= - all attributes (same as for all tags)
  *  - #tag - search for `tag` in tags and `#tag` in the text
  *  - #key=value - search for `key=value` in tags, `key`=`value` in attributes
  *    and #key=value in the text
@@ -75,6 +77,45 @@
  *  - word - search for the `word` in tags, attribute keys and values and text
  *  - TODO from:id, to:id - search tags, keys, values and text that contain
  *    the strings
+ *  - TODO $variable, $variable=value
+ *
+ *  Search algorithm
+ *
+ *  0. If the search string is empty - return nothing.
+ *  1. Tags
+ *
+ *     - if # is present: find all tags - this is the result;
+ *     - otherwise:
+ *
+ *       - for each #tag_name find all tags with tag_name as a substring, add
+ *         all of them to the results;
+ *       - for each text_string: same as for tag_name above.
+ *
+ *  2. Attributes
+ *
+ *     - if #= is present: find all attributes - this is the result
+ *     - otherwise
+ *
+ *       - for #key_name=: find all keys where key_name is a substring. Add all
+ *         such keys to the results (without values);
+ *       - for #=value_name: similar to #key_name=;
+ *       - for #key_name=value_name: find such key-value pair where key_name is
+ *         a substring of the key and value_name is a substring of the value,
+ *         and add all such key-values to the result;
+ *       - for each text_string: look for it as a substring in the keys and
+ *         values, add all matching keys, values and key-value pairs to the
+ *         result.
+ *
+ *     - TODO define if we want keys, values or both or with some filter
+ *
+ *  3. Records and links
+ *
+ *   - for every explicit tag and/or attribute from the search box: find
+ *     records/links which have all of them at the same time. Then:
+ *
+ *     - for links: add such links to the results;
+ *     - for records: filter records futher by requiring each of them to have
+ *       all text_string strings that don't start from # from the query.
  *
  *  TODO URI
  *
