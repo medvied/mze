@@ -161,12 +161,13 @@ impl Container for ContainerSqlite {
 }
 
 impl ContainerSqliteTransaction<'_> {
-    fn eid_stored_max(
-        &self,
-    ) -> Result<Option<EntityId>, Box<dyn error::Error>> {
+    fn eid_next(&self) -> Result<EntityId, Box<dyn error::Error>> {
         let all_record_ids = self.record_get_all_ids()?;
         let all_link_ids = self.link_get_all_ids()?;
-        Ok(iter::chain(all_record_ids, all_link_ids).max())
+        Ok(iter::chain(all_record_ids, all_link_ids)
+            .max()
+            .map(|eid| eid.add_1())
+            .unwrap_or(ENTITY_ID_START))
     }
 }
 
@@ -531,7 +532,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         record: &Record,
     ) -> Result<EntityId, Box<dyn error::Error>> {
         let eid = match eid {
-            None => self.eid_stored_max()?.unwrap_or(ENTITY_ID_START),
+            None => self.eid_next()?,
             Some(eid) => *eid,
         };
         self.tags_and_attributes_put(&eid, &record.ta)?;
@@ -710,7 +711,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         link: &Link,
     ) -> Result<EntityId, Box<dyn error::Error>> {
         let eid = match eid {
-            None => self.eid_stored_max()?.unwrap_or(ENTITY_ID_START),
+            None => self.eid_next()?,
             Some(eid) => *eid,
         };
         self.tags_and_attributes_put(&eid, &link.ta)?;
