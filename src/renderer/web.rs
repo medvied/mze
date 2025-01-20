@@ -5,6 +5,7 @@ use actix_web::{
     HttpServer, Responder,
 };
 use futures_util::StreamExt as _;
+use tera;
 
 use tokio;
 
@@ -16,7 +17,7 @@ use crate::{
 };
 
 mod files;
-use files::SEARCH_HTML;
+use files::{SEARCH_HTML, TEMPLATES};
 
 pub struct RendererWebState {
     container: Box<dyn Container + Send>,
@@ -25,15 +26,23 @@ pub struct RendererWebState {
 pub struct RendererWeb {
     uri: String,
     state: Option<RendererWebState>,
+    tera: Option<tera::Tera>,
 }
 
 pub struct SearchResultRendererWeb {}
 pub struct SearchQueryRendererWeb {}
 
 #[derive(Debug, serde::Serialize)]
-struct JsonSearchResult {
+struct JsonSearchResults {
+    search_results_tags: String,
+    search_results_attributes: String,
+    search_results_records_and_links: String,
+}
+
+#[derive(Debug, serde::Serialize)]
+struct JsonSearchResponse {
     search_interpretation: String,
-    search_result: String,
+    search_results: JsonSearchResults,
     search_stats: String,
 }
 
@@ -59,15 +68,21 @@ impl Renderer for RendererWeb {
     where
         Self: Sized,
     {
+        let mut tera = tera::Tera::default();
+        for (name, content) in TEMPLATES {
+            tera.add_raw_template(name, std::str::from_utf8(content)?)?;
+        }
         Ok(Self {
             uri: uri.to_string(),
             state: Some(RendererWebState { container }),
+            tera: Some(tera),
         })
     }
 
     fn run(&mut self) -> Result<(), Box<dyn error::Error>> {
         let state = self.state.take().unwrap();
-        self.run_async(self.uri.clone(), state)?;
+        let tera = self.tera.take().unwrap();
+        self.run_async(self.uri.clone(), state, tera)?;
         Ok(())
     }
 }
@@ -78,12 +93,15 @@ impl RendererWeb {
         &mut self,
         uri: String,
         state: RendererWebState,
+        tera: tera::Tera,
     ) -> Result<(), std::io::Error> {
         let data_state = web::Data::new(std::sync::Mutex::new(state));
+        let data_tera = web::Data::new(std::sync::Mutex::new(tera));
         HttpServer::new(move || {
             App::new()
                 .wrap(middleware::Logger::default())
                 .app_data(data_state.clone())
+                .app_data(data_tera.clone())
                 .route("/test", web::get().to(Self::test))
                 .route("/", web::get().to(Self::search_html))
                 .route("/search", web::get().to(Self::search))
@@ -94,7 +112,10 @@ impl RendererWeb {
                         .route("/data", web::get().to(Self::record_data_get))
                         .route("/data", web::put().to(Self::record_data_put))
                         .route("/tags", web::get().to(Self::record_tags_get))
-                        .route("/attributes", web::get().to(Self::record_attributes_get))
+                        .route(
+                            "/attributes",
+                            web::get().to(Self::record_attributes_get),
+                        )
                         .route("all", web::get().to(Self::record_all_get)),
                 )
         })
@@ -105,7 +126,13 @@ impl RendererWeb {
     }
 
     async fn test() -> impl Responder {
-        HttpResponse::Ok().body("my test")
+        let t = JsonRecord {
+            id: Some(1),
+            data: Some(String::from("asdf")),
+            ..Default::default()
+        };
+        // HttpResponse::Ok().body("my test")
+        HttpResponse::Ok().json(vec![t])
     }
 
     async fn search_html() -> impl Responder {
@@ -115,25 +142,73 @@ impl RendererWeb {
     async fn search(
         uri_search_query: web::Query<UriSearchQuery>,
         state_data: web::Data<std::sync::Mutex<RendererWebState>>,
+        tera_data: web::Data<std::sync::Mutex<tera::Tera>>,
     ) -> Result<impl Responder, Box<dyn std::error::Error>> {
         let mut state = state_data.lock().unwrap();
+        let tera = tera_data.lock().unwrap();
         let tx: &(dyn ContainerTransaction + '_) =
             &*state.container.begin_transaction()?;
         let search_query = SearchQuery::new(&uri_search_query.q);
         let container_search_result = tx.search(&search_query)?;
         let search_interpretation =
             SearchQueryRendererWeb::render(tx, &search_query);
-        let search_result = container_search_result
+        let search_results_tags = container_search_result
             .iter()
-            .map(|search_result| {
-                SearchResultRendererWeb::render(tx, search_result)
+            .filter_map(|search_result| match search_result {
+                SearchResult::Tag(search_result_tag) => {
+                    Some(SearchResultRendererWeb::render_tag(
+                        tx,
+                        &tera,
+                        search_result_tag,
+                    ))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let search_results_attributes = container_search_result
+            .iter()
+            .filter_map(|search_result| match search_result {
+                SearchResult::Attribute(search_result_attribute) => {
+                    Some(SearchResultRendererWeb::render_attribute(
+                        tx,
+                        &tera,
+                        search_result_attribute,
+                    ))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let search_results_records_and_links = container_search_result
+            .iter()
+            .filter_map(|search_result| match search_result {
+                SearchResult::Record(search_result_record) => {
+                    Some(SearchResultRendererWeb::render_record(
+                        tx,
+                        &tera,
+                        search_result_record,
+                    ))
+                }
+                SearchResult::Link(search_result_link) => {
+                    Some(SearchResultRendererWeb::render_link(
+                        tx,
+                        &tera,
+                        search_result_link,
+                    ))
+                }
+                _ => None,
             })
             .collect::<Vec<_>>()
             .join("\n");
         let search_stats = String::new();
-        Ok(HttpResponse::Ok().json(JsonSearchResult {
+        Ok(HttpResponse::Ok().json(JsonSearchResponse {
             search_interpretation,
-            search_result,
+            search_results: JsonSearchResults {
+                search_results_tags,
+                search_results_attributes,
+                search_results_records_and_links,
+            },
             search_stats,
         }))
     }
@@ -278,49 +353,77 @@ impl RendererWeb {
 
 impl SearchResultRendererWeb {
     fn render(
-        tx: &(dyn ContainerTransaction + '_),
-        search_result: &SearchResult,
+        tera: &tera::Tera,
+        context: &tera::Context,
+        template_name: &str,
     ) -> String {
-        match search_result {
-            SearchResult::Record(search_result_record) => {
-                Self::render_record(tx, search_result_record)
-            }
-            SearchResult::Link(search_result_link) => {
-                Self::render_link(tx, search_result_link)
-            }
-            SearchResult::Tag(search_result_tag) => {
-                Self::render_tag(tx, search_result_tag)
-            }
-            SearchResult::Attribute(search_result_attribute) => {
-                Self::render_attribute(tx, search_result_attribute)
-            }
+        match tera.render(template_name, context) {
+            Ok(s) => s,
+            Err(err) => format!("Failed to render {template_name}: {err:?}"),
         }
     }
 
     fn render_record(
-        _tx: &(dyn ContainerTransaction + '_),
-        _search_result_record: &SearchResultRecord,
+        tx: &(dyn ContainerTransaction + '_),
+        tera: &tera::Tera,
+        search_result_record: &SearchResultRecord,
     ) -> String {
-        String::from("record")
+        let record = tx.record_get(&search_result_record.record_id);
+        let record = match record {
+            Ok(record) => match record {
+                Some(record) => Ok(record),
+                None => Err(format!(
+                    "The record with id={:?} does not exist",
+                    &search_result_record.record_id
+                )),
+            },
+            Err(err) => Err(format!("Error retrieving record: {err:?}")),
+        };
+        let mut context = tera::Context::new();
+        context.insert("id", &search_result_record.record_id.id);
+        log::info!("record={record:?}");
+        match record {
+            Ok(record) => {
+                context.insert("tags", &record.ta.tags);
+                context.insert("attributes", &record.ta.attributes);
+                context
+                    .insert("record_data", &Self::render_record_data(&record));
+            }
+            Err(message) => {
+                context.insert("tags", &Vec::<String>::new());
+                context.insert("attributes", &Vec::<(String, String)>::new());
+                context.insert("record_data", &message);
+            }
+        };
+        log::info!("context={context:?}");
+        Self::render(tera, &context, "search_result_record.html")
+    }
+
+    fn render_record_data(record: &Record) -> String {
+        String::from_utf8(record.data.clone().unwrap_or_default())
+            .unwrap_or_else(|err| err.to_string())
     }
 
     fn render_link(
         _tx: &(dyn ContainerTransaction + '_),
-        _search_result_record: &SearchResultLink,
+        _tera: &tera::Tera,
+        _search_result_link: &SearchResultLink,
     ) -> String {
         String::from("link")
     }
 
     fn render_tag(
         _tx: &(dyn ContainerTransaction + '_),
-        _search_result_record: &SearchResultTag,
+        _tera: &tera::Tera,
+        _search_result_tag: &SearchResultTag,
     ) -> String {
         String::from("tag")
     }
 
     fn render_attribute(
         _tx: &(dyn ContainerTransaction + '_),
-        _search_result_record: &SearchResultAttribute,
+        _tera: &tera::Tera,
+        _search_result_attribute: &SearchResultAttribute,
     ) -> String {
         String::from("attribute")
     }
