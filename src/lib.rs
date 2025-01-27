@@ -36,8 +36,8 @@
  *   - tags
  *   - attributes (example: time format)
  *   - links (example: one image is a thumbnail of another)
- *   - records (example: outline is a record that has a tree-like structure that reference other
- *     records)
+ *   - records (example: outline is a record that has a tree-like structure
+ *     that reference other records)
  *
  *  - container may contain records, links and other containers
  *
