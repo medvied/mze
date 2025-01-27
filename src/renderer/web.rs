@@ -17,7 +17,7 @@ use crate::{
 };
 
 mod files;
-use files::{SEARCH_HTML, TEMPLATES};
+use files::{SEARCH_CSS, SEARCH_HTML, SEARCH_JS, TEMPLATES};
 
 pub struct RendererWebState {
     container: Box<dyn Container + Send>,
@@ -104,6 +104,8 @@ impl RendererWeb {
                 .app_data(data_tera.clone())
                 .route("/test", web::get().to(Self::test))
                 .route("/", web::get().to(Self::search_html))
+                .route("/search.css", web::get().to(Self::search_css))
+                .route("/search.js", web::get().to(Self::search_js))
                 .route("/search", web::get().to(Self::search))
                 .route("/record", web::put().to(Self::put_record))
                 .route("/record", web::get().to(Self::get_record))
@@ -137,6 +139,14 @@ impl RendererWeb {
 
     async fn search_html() -> impl Responder {
         HttpResponse::Ok().body(SEARCH_HTML)
+    }
+
+    async fn search_css() -> impl Responder {
+        HttpResponse::Ok().body(SEARCH_CSS)
+    }
+
+    async fn search_js() -> impl Responder {
+        HttpResponse::Ok().body(SEARCH_JS)
     }
 
     async fn search(
