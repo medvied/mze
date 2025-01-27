@@ -399,6 +399,7 @@ impl SearchResultRendererWeb {
             Err(err) => Err(format!("Error retrieving record: {err:?}")),
         };
         let mut context = tera::Context::new();
+        context.insert("container", "main");    // XXX add container name
         context.insert("id", &search_result_record.record_id.id);
         log::info!("record={record:?}");
         match record {
