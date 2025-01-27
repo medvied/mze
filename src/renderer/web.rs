@@ -1,10 +1,11 @@
 use std::{collections::HashMap, error};
 
 use actix_web::{
-    body::EitherBody, middleware, web, App, Either, HttpRequest, HttpResponse,
-    HttpServer, Responder,
+    body::EitherBody, http::header::ContentType, middleware, web, App, Either,
+    HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use futures_util::StreamExt as _;
+use mime;
 use tera;
 
 use tokio;
@@ -138,15 +139,21 @@ impl RendererWeb {
     }
 
     async fn search_html() -> impl Responder {
-        HttpResponse::Ok().body(SEARCH_HTML)
+        HttpResponse::Ok()
+            .insert_header(ContentType::html())
+            .body(SEARCH_HTML)
     }
 
     async fn search_css() -> impl Responder {
-        HttpResponse::Ok().body(SEARCH_CSS)
+        HttpResponse::Ok()
+            .insert_header(ContentType(mime::TEXT_CSS))
+            .body(SEARCH_CSS)
     }
 
     async fn search_js() -> impl Responder {
-        HttpResponse::Ok().body(SEARCH_JS)
+        HttpResponse::Ok()
+            .insert_header(ContentType(mime::TEXT_JAVASCRIPT))
+            .body(SEARCH_JS)
     }
 
     async fn search(
@@ -281,7 +288,9 @@ impl RendererWeb {
         Ok(match result {
             Some(record) => {
                 let data = record.data.unwrap_or_default();
-                HttpResponse::Ok().body(data)
+                HttpResponse::Ok()
+                    .insert_header(ContentType(mime::APPLICATION_OCTET_STREAM))
+                    .body(data)
             }
             None => HttpResponse::NotFound().body(format!(
                 "Record not found: entity_path={entity_path:?}"
