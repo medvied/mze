@@ -14,19 +14,48 @@
 
 .search_results_tags, .search_results_attributes, .search_results_records_and_links {
 	display: flex;
+	flex-wrap: wrap;
 }
 
-article.search_result {
+article.search_result_record {
+	flex: 200px;
+	min-width: 200px;
+	max-width: 300px;
+	max-height: 400px;
+	margin: 0.3em;
+	border: 1px solid black;
+	border-radius: 0.2em;
+
 	section.info {
+		border-bottom: 1px solid black;
+		padding: 0.2em;
+		box-sizing: border-box;
+
+		.container_and_id {
+			display: inline-block;
+			width: 100%;
+			text-align: end;
+		}
 	}
 
 	section.tags {
+		border-bottom: 1px solid black;
+		padding: 0.2em;
+		max-height: 2.4em;
+		overflow-y: auto;
 	}
 
 	section.attributes {
+		border-bottom: 1px solid black;
+		padding: 0.2em;
+		max-height: 3.4em;
+		overflow-y: auto;
 	}
 
 	section.record_data {
+		padding: 0.2em;
+		max-height: 8.4em;
+		overflow-y: auto;
 	}
 
 	section.link_from_to {
