@@ -30,7 +30,7 @@
  * - link to and from are unordered sets
  * - there may be more than 1 link between 2 records
  * - tags: unordered set of UTF-8 strings
- * - attributes: unordered key:value map, both key and value are UTF8 strings
+ * - attributes: unordered key:value map, both key and value are UTF-8 strings
  * - types for:
  *
  *   - tags
