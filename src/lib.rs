@@ -126,6 +126,8 @@
  * TODO log debug messages and errors consistently
  * TODO add # of containers/records/links/tags/attributes and the time to
  * generate the page to the footer
+ * TODO root container - the container that contains all containers loaded by
+ * default
  */
 
 // to make thread::current().id().as_u64() work
