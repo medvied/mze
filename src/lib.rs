@@ -45,77 +45,72 @@
  *
  *  - Linux kernel tree: files, functions, call graph
  *
- *  Search query format
+ *  Search query
  *
- *  - the search query is a whitespace-separated list of words that have
- *    to be applicable for every search result (i.e. there is an implicit
- *    logical AND between every pair of words)
- *  - search() looks for every word from the query in the text
- *  - search() looks for every word that starts with `#`: it removes the `#`
- *    and then searches for the string in the tags as well
- *  - search() looks for every word that has `=` after `#`: it removes `#`,
- *    splits the remaining string into key and value on the first `=` and then
- *    searches for the key=value in the attributes
+ *  The search is done in the following way:
+ *
+ * - the search string is split into whitespace-separated tokens
+ *   (for the purpose of the further description: "xxx" token is 3 "x" chars,
+ *   double quotes are not included);
+ * - if there is "#" token in the search string, then this is a search for tags
+ *   only:
+ *
+ *   - if there are no tokens other than "#" then the result is all tags in the
+ *     container;
+ *   - "#" prefix is removed from every token (only once), empty tokens are
+ *     removed, and the search result is a set of tags that have any of the
+ *     tokens as a substring;
+ *   - the search ends here.
+ *
+ *  - if there is "#=" token in the search string, then this is a search for
+ *    attributes:
+ *
+ *    - if the are no tokens other than "#=" then the result is a set of all
+ *      keys and values in the container;
+ *    - "#" prefix is removed from every token (only once), empty tockens are
+ *      removed, the result is split into key and value on the first "=";
+ *    - for each key=value there is a set of all keys and values where the key
+ *      from key=value is a substring of the key and the value from key=value
+ *      is a substring of the value. For the purpose of building the sets an
+ *      empty string is a subset of any string;
+ *    - the search result is a union of all sets described in the previous
+ *      paragraph;
+ *    - the search ends here.
+ *
+ *  - otherwise, this is a search for links and records:
+ *
+ *    - first, a set of tags to look for is built. All the tokens that start
+ *      with "#" and don't have "=" have the "#" prefix removed (only once),
+ *      and a set of tag tokens is built;
+ *    - second, a set of attributes to look for is built. All the tokents that
+ *      start with "#" and have "=" inside have the "#" previx removed (only
+ *      once) and a set of key:value pairs is built by splitting the result
+ *      on the first "=";
+ *    - the search result is a set of all records and links where each record
+ *      and each link have the following properties:
+ *
+ *      - every tag token from the set of tag tokens is a substring of a tag of
+ *        the record/link;
+ *      - every key:value pair from the set of key:value pairs build from the
+ *        search string has a corresponding key1:value1 pair in the record/link
+ *        attributes such as key is a substring of key1 and value is a
+ *        substring of value1 (an empty string is a substring of any string for
+ *        the purpose of this check);
+ *      - each token that doesn't start with "#" is either a substring of
+ *        a tag, a substring of a key or a value or a substring of the record
+ *        blob.
+ *
+ *    - the search ends here.
+ *
+ *
  *  - TODO `from:id`, `to:id` - search() looks for links with specific record
  *    ids
  *  - TODO `from:$(search query)`, `to:$(search query)` - look for links
  *    that have records from the search query
  *  - TODO $variable, $variable=value - configure search variables
- *
- *  Another way to describe search query format
- *
- *  - # - all tags (only for the tag results, for Records/links the rest of the
- *    tags query is used if present)
- *  - #= - all attributes (same as for all tags)
- *  - #tag - search for `tag` in tags and `#tag` in the text
- *  - #key=value - search for `key=value` in tags, `key`=`value` in attributes
- *    and #key=value in the text
- *  - #key= - search for `key=` in tags and `key` in the attribute keys
- *    (regardless of value for the key)
- *  - #=value - search for `=value` in tags and `value` in the attribute values
- *    (regardless of the key for attribute)
- *  - word - search for the `word` in tags, attribute keys and values and text
  *  - TODO from:id, to:id - search tags, keys, values and text that contain
  *    the strings
  *  - TODO $variable, $variable=value
- *
- *  Search algorithm
- *
- *  0. If the search string is empty - return nothing.
- *  1. Tags
- *
- *     - if # is present: find all tags - this is the result;
- *     - otherwise:
- *
- *       - for each #tag_name find all tags with tag_name as a substring, add
- *         all of them to the results;
- *       - for each text_string: same as for tag_name above.
- *
- *  2. Attributes
- *
- *     - if #= is present: find all attributes - this is the result
- *     - otherwise
- *
- *       - for #key_name=: find all keys where key_name is a substring. Add all
- *         such keys to the results (without values);
- *       - for #=value_name: similar to #key_name=;
- *       - for #key_name=value_name: find such key-value pair where key_name is
- *         a substring of the key and value_name is a substring of the value,
- *         and add all such key-values to the result;
- *       - for each text_string: look for it as a substring in the keys and
- *         values, add all matching keys, values and key-value pairs to the
- *         result.
- *
- *     - TODO define if we want keys, values or both or with some filter
- *
- *  3. Records and links
- *
- *   - for every explicit tag and/or attribute from the search box: find
- *     records/links which have all of them at the same time. Then:
- *
- *     - for links: add such links to the results;
- *     - for records: filter records futher by requiring each of them to have
- *       all text_string strings that don't start from # from the query.
  *
  *  TODO URI
  *
