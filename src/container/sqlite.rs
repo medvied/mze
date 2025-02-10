@@ -173,10 +173,6 @@ impl ContainerSqliteTransaction<'_> {
     fn tags_all(&self) -> Vec<String> {
         Vec::new()
     }
-
-    fn tags_search(&self, _substring: &str) -> Vec<String> {
-        Vec::new()
-    }
 }
 
 impl ContainerTransaction for ContainerSqliteTransaction<'_> {
@@ -184,33 +180,31 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         &self,
         search_query: &SearchQuery,
     ) -> Result<Vec<SearchResult>, Box<dyn error::Error>> {
-        if search_query.is_empty {
-            return Ok(Vec::new());
-        }
-        let mut vec_results = Vec::new();
-        let mut tags;
-        if search_query.tags_all {
-            tags = self.tags_all();
-        } else {
-            tags = Vec::new();
-            for tag in &search_query.tags {
-                tags.extend(self.tags_search(tag));
+        Ok(match search_query {
+            SearchQuery::Tags(tags) => {
+                HashSet::<String>::from_iter(self.tags_all())
+                    .into_iter()
+                    .filter_map(|tag| {
+                        if tags.tag_substrings.iter().any(|s| tag.contains(s))
+                        {
+                            Some(SearchResult::Tag(SearchResultTag { tag }))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
             }
-        }
-        vec_results.extend(
-            HashSet::<String>::from_iter(tags)
-                .into_iter()
-                .map(|tag| SearchResult::Tag(SearchResultTag { tag })),
-        );
-        // TODO add all records to the results for now
-        vec_results.extend(self.record_get_all_ids()?.iter().map(
-            |record_id| {
-                SearchResult::Record(SearchResultRecord {
-                    record_id: *record_id,
+            SearchQuery::Attributes(_attributes) => Vec::new(),
+            SearchQuery::RecordsAndLinks(_records_and_links) => self
+                .record_get_all_ids()?
+                .iter()
+                .map(|record_id| {
+                    SearchResult::Record(SearchResultRecord {
+                        record_id: *record_id,
+                    })
                 })
-            },
-        ));
-        Ok(vec_results)
+                .collect(),
+        })
     }
 
     fn commit(self: Box<Self>) -> Result<(), Box<dyn error::Error>> {

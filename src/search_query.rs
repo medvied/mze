@@ -1,80 +1,124 @@
 #[derive(Debug)]
-pub struct SearchQuery {
-    pub is_empty: bool,
-    pub text: Vec<String>,
-    pub tags_all: bool,
-    pub tags: Vec<String>,
-    pub attributes_all: bool,
-    pub attribute_keys_only: Vec<String>,
-    pub attribute_values_only: Vec<String>,
-    pub attributes: Vec<(String, String)>,
+pub struct SearchQueryTags {
+    pub tag_substrings: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct SearchQueryAttributes {
+    pub attribute_key_substrings: Vec<String>,
+    pub attribute_value_substrings: Vec<String>,
+    pub attribute_kv_substrings: Vec<(String, String)>,
+}
+
+#[derive(Debug)]
+pub struct SearchQueryRecordsAndLinks {
+    pub tags: SearchQueryTags,
+    pub attributes: SearchQueryAttributes,
+    pub text_substrings: Vec<String>,
+}
+
+#[derive(Debug)]
+pub enum SearchQuery {
+    Tags(SearchQueryTags),
+    Attributes(SearchQueryAttributes),
+    RecordsAndLinks(SearchQueryRecordsAndLinks),
 }
 
 impl SearchQuery {
     pub fn new(query: &str) -> SearchQuery {
         let words: Vec<_> = query.split_whitespace().collect();
-        SearchQuery {
-            is_empty: words.is_empty(),
-            text: words.iter().map(|word| String::from(*word)).collect(),
-            tags_all: words.iter().any(|word| *word == "#"),
-            tags: words
-                .iter()
+        if words.contains(&"#") {
+            let tag_substrings = words
+                .into_iter()
                 .filter_map(|word| {
-                    Some(String::from(Self::get_if_hashtag(word)?))
-                })
-                .collect(),
-            attributes_all: words.iter().any(|word| *word == "#="),
-            attribute_keys_only: words
-                .iter()
-                .filter_map(|word| {
-                    let (key, value) = Self::get_if_hash_key_value(word)?;
-                    if !key.is_empty() && value.is_empty() {
-                        Some(String::from(key))
-                    } else {
-                        None
+                    if word.is_empty() || word == "#" {
+                        return None;
                     }
+                    Some(String::from(
+                        if let Some(stripped) = word.strip_prefix("#") {
+                            stripped
+                        } else {
+                            word
+                        },
+                    ))
                 })
-                .collect(),
-            attribute_values_only: words
-                .iter()
-                .filter_map(|word| {
-                    let (key, value) = Self::get_if_hash_key_value(word)?;
-                    if key.is_empty() && !value.is_empty() {
-                        Some(String::from(value))
+                .collect();
+            SearchQuery::Tags(SearchQueryTags { tag_substrings })
+        } else if words.contains(&"#=") {
+            let mut attribute_key_substrings = Vec::new();
+            let mut attribute_value_substrings = Vec::new();
+            let mut attribute_kv_substrings = Vec::new();
+            for word in words {
+                let word = if let Some(stripped) = word.strip_prefix("#") {
+                    stripped
+                } else {
+                    word
+                };
+                if word.is_empty() || word == "=" {
+                    continue;
+                }
+                if let Some(equals_pos) = word.find("=") {
+                    let k = String::from(&word[..equals_pos]);
+                    let v = String::from(&word[equals_pos + 1..]);
+                    if v.is_empty() {
+                        assert!(!k.is_empty());
+                        attribute_key_substrings.push(k);
+                    } else if k.is_empty() {
+                        attribute_value_substrings.push(v);
                     } else {
-                        None
+                        attribute_kv_substrings.push((k, v));
                     }
-                })
-                .collect(),
-            attributes: words
-                .iter()
-                .filter_map(|word| {
-                    let (key, value) = Self::get_if_hash_key_value(word)?;
-                    if !key.is_empty() && !value.is_empty() {
-                        Some((String::from(key), String::from(value)))
-                    } else {
-                        None
-                    }
-                })
-                .collect(),
-        }
-    }
-
-    fn get_if_hashtag(word: &str) -> Option<&str> {
-        // >= 2 to avoid returning strings
-        if word.len() >= 2 && word.starts_with("#") {
-            Some(&word[1..])
+                } else {
+                    attribute_key_substrings.push(String::from(word));
+                    attribute_value_substrings.push(String::from(word));
+                };
+            }
+            SearchQuery::Attributes(SearchQueryAttributes {
+                attribute_key_substrings,
+                attribute_value_substrings,
+                attribute_kv_substrings,
+            })
         } else {
-            None
-        }
-    }
+            let mut tag_substrings = Vec::new();
+            let mut attribute_key_substrings = Vec::new();
+            let mut attribute_value_substrings = Vec::new();
+            let mut attribute_kv_substrings = Vec::new();
+            let mut text_substrings = Vec::new();
 
-    fn get_if_hash_key_value(word: &str) -> Option<(&str, &str)> {
-        if word.starts_with("#") {
-            word.find('=')
-                .map(|pos| (&word[1..pos], &word[(pos + 1)..]))
-        } else {
-            None
+            for word in words {
+                assert!(!word.is_empty());
+                assert!(word != "#");
+                assert!(word != "#=");
+                if let Some(word) = word.strip_prefix("#") {
+                    if let Some(equals_pos) = word.find("=") {
+                        let k = String::from(&word[..equals_pos]);
+                        let v = String::from(&word[equals_pos + 1..]);
+                        // XXX copy-paste
+                        if v.is_empty() {
+                            assert!(!k.is_empty());
+                            attribute_key_substrings.push(k);
+                        } else if k.is_empty() {
+                            attribute_value_substrings.push(v);
+                        } else {
+                            attribute_kv_substrings.push((k, v));
+                        }
+                    } else {
+                        tag_substrings.push(String::from(word));
+                    }
+                } else {
+                    text_substrings.push(String::from(word));
+                }
+            }
+
+            SearchQuery::RecordsAndLinks(SearchQueryRecordsAndLinks {
+                tags: SearchQueryTags { tag_substrings },
+                attributes: SearchQueryAttributes {
+                    attribute_key_substrings,
+                    attribute_value_substrings,
+                    attribute_kv_substrings,
+                },
+                text_substrings,
+            })
         }
     }
 }
