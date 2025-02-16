@@ -28,6 +28,8 @@ pub enum ContainerSqliteError {
     SqliteQueryMapFailed { err: rusqlite::Error },
     #[error("too many rows for a single record: eid={eid:?}")]
     TooManyRowsForARecord { eid: EntityId },
+    #[error("error retrieving data: err={err}")]
+    ErrorRetrievingData { err: rusqlite::Error },
     #[error("error retrieving record data: err={err}")]
     ErrorRetrievingRecordData { err: rusqlite::Error },
     #[error("error executing prepared statement: sql={sql} err={err}")]
@@ -170,8 +172,33 @@ impl ContainerSqliteTransaction<'_> {
             .unwrap_or(ENTITY_ID_START))
     }
 
-    fn tags_all(&self) -> Vec<String> {
-        Vec::new()
+    fn get_all_tags(&self) -> Result<Vec<String>, Box<dyn error::Error>> {
+        let sql = "SELECT DISTINCT tag \
+                   FROM tags;";
+        debug!("tx.prepare(): sql={sql}");
+        let statement = self.tx.prepare(sql);
+        if let Err(err) = statement {
+            return Err(Box::new(
+                ContainerSqliteError::SqliteConnPrepareFailed {
+                    sql: sql.to_string(),
+                    err,
+                },
+            ));
+        }
+        let mut statement = statement.unwrap();
+        let rows =
+            statement.query_map((), |row| row.get::<&str, String>("tag"));
+        let result: Result<Vec<_>, _> = rows
+            .map_err(|err| {
+                Box::new(ContainerSqliteError::SqliteQueryMapFailed { err })
+            })?
+            .map(|row| {
+                row.map_err(|err| {
+                    Box::new(ContainerSqliteError::ErrorRetrievingData { err })
+                })
+            })
+            .collect();
+        Ok(result?)
     }
 
     fn get_all_attributes(&self) -> Vec<(String, String)> {
@@ -187,7 +214,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         Ok(match search_query {
             SearchQuery::Tags(tags) => {
                 let return_all_tags = tags.is_empty();
-                HashSet::<String>::from_iter(self.tags_all())
+                HashSet::<String>::from_iter(self.get_all_tags()?)
                     .into_iter()
                     .filter_map(|tag| {
                         if return_all_tags || tags.check(&tag) {
@@ -338,9 +365,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 }
                 Err(err) => {
                     return Err(Box::new(
-                        ContainerSqliteError::ErrorRetrievingRecordData {
-                            err,
-                        },
+                        ContainerSqliteError::ErrorRetrievingData { err },
                     ));
                 }
             }
