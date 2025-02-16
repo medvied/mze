@@ -172,20 +172,23 @@ impl ContainerSqliteTransaction<'_> {
             .unwrap_or(ENTITY_ID_START))
     }
 
+    fn statement_prepare(
+        &self,
+        sql: &str,
+    ) -> Result<rusqlite::Statement<'_>, Box<dyn error::Error>> {
+        debug!("tx.prepare(): sql={sql}");
+        Ok(self.tx.prepare(sql).map_err(|err| {
+            Box::new(ContainerSqliteError::SqliteConnPrepareFailed {
+                sql: sql.to_string(),
+                err,
+            })
+        })?)
+    }
+
     fn get_all_tags(&self) -> Result<Vec<String>, Box<dyn error::Error>> {
         let sql = "SELECT DISTINCT tag \
                    FROM tags;";
-        debug!("tx.prepare(): sql={sql}");
-        let statement = self.tx.prepare(sql);
-        if let Err(err) = statement {
-            return Err(Box::new(
-                ContainerSqliteError::SqliteConnPrepareFailed {
-                    sql: sql.to_string(),
-                    err,
-                },
-            ));
-        }
-        let mut statement = statement.unwrap();
+        let mut statement = self.statement_prepare(sql)?;
         let rows =
             statement.query_map((), |row| row.get::<&str, String>("tag"));
         let result: Result<Vec<_>, _> = rows
@@ -327,18 +330,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
              WHERE \
              id = ?\
              ;";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         let rows = statement.query_map((eid.id() as i64,), |row| {
             row.get::<&str, String>("tag")
         });
@@ -380,18 +372,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
     ) -> Result<(), Box<dyn error::Error>> {
         let sql = "INSERT INTO tags(id, tag) \
                    VALUES(?, ?);";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         for tag in tags {
             let nr_inserted = statement.execute((eid.id() as i64, tag));
             if let Err(err) = nr_inserted {
@@ -413,18 +394,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         let sql = "DELETE FROM tags WHERE \
                    id = ?\
                    ;";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         let nr_deleted = statement.execute((eid.id() as i64,));
         if let Err(err) = nr_deleted {
             return Err(Box::new(
@@ -447,18 +417,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
              WHERE \
              id = ?\
              ;";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         let rows = statement.query_map((eid.id() as i64,), |row| {
             let key = row.get::<&str, String>("key");
             let value = row.get::<&str, String>("value");
@@ -518,18 +477,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
     ) -> Result<(), Box<dyn error::Error>> {
         let sql = "INSERT INTO attributes(id, key, value) \
                    VALUES(?, ?, ?);";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         for (key, value) in attributes {
             let nr_inserted = statement.execute((eid.id() as i64, key, value));
             if let Err(err) = nr_inserted {
@@ -551,18 +499,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         let sql = "DELETE FROM attributes WHERE \
                    id = ?\
                    ;";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         let nr_deleted = statement.execute((eid.id() as i64,));
         if let Err(err) = nr_deleted {
             return Err(Box::new(
@@ -588,18 +525,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
              WHERE \
              id = ?\
              ;";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         let rows = statement.query_map((eid.id() as i64,), |row| {
             row.get::<&str, Vec<u8>>("data")
         });
@@ -645,18 +571,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         self.tags_and_attributes_put(&eid, &record.ta)?;
         let sql = "INSERT INTO records(id, data) \
                    VALUES(?, ?);";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         let nr_inserted = statement.execute((eid.id() as i64, &record.data));
         if let Err(err) = nr_inserted {
             return Err(Box::new(
@@ -686,18 +601,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         let sql = "DELETE FROM records WHERE \
                    id = ?\
                    ;";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         let nr_deleted = statement.execute((eid.id() as i64,));
         if let Err(err) = nr_deleted {
             return Err(Box::new(
@@ -716,17 +620,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
     ) -> Result<Vec<EntityId>, Box<dyn error::Error>> {
         let sql = "SELECT id \
                    FROM records;";
-        debug!("tx.prepare(): sql={sql}");
-        let statement = self.tx.prepare(sql);
-        if let Err(err) = statement {
-            return Err(Box::new(
-                ContainerSqliteError::SqliteConnPrepareFailed {
-                    sql: sql.to_string(),
-                    err,
-                },
-            ));
-        }
-        let mut statement = statement.unwrap();
+        let mut statement = self.statement_prepare(sql)?;
         let rows = statement.query_map((), |row| row.get::<&str, i64>("id"));
         if let Err(err) = rows {
             debug!("err={err}");
@@ -760,18 +654,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
              WHERE \
              id = ?\
              ;";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         let rows = statement.query_map((eid.id() as i64,), |row| {
             Ok((
                 row.get::<&str, bool>("is_to")?,
@@ -824,18 +707,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         self.tags_and_attributes_put(&eid, &link.ta)?;
         let sql = "INSERT INTO links(id, is_to, record_id) \
                    VALUES(?, ?, ?);";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         for (is_to, vec_eid) in [(false, &link.from), (true, &link.to)] {
             for record_eid in vec_eid {
                 let nr_inserted = statement.execute((
@@ -873,18 +745,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         let sql = "DELETE FROM links WHERE \
                    id = ?\
                    ;";
-        let statement = self.tx.prepare(sql);
-        let mut statement = match statement {
-            Ok(ok) => ok,
-            Err(err) => {
-                return Err(Box::new(
-                    ContainerSqliteError::SqliteConnPrepareFailed {
-                        sql: sql.to_string(),
-                        err,
-                    },
-                ))
-            }
-        };
+        let mut statement = self.statement_prepare(sql)?;
         let nr_deleted = statement.execute((eid.id() as i64,));
         if let Err(err) = nr_deleted {
             return Err(Box::new(
@@ -903,17 +764,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
     ) -> Result<Vec<EntityId>, Box<dyn error::Error>> {
         let sql = "SELECT DISTINCT id \
                    FROM links;";
-        debug!("tx.prepare(): sql={sql}");
-        let statement = self.tx.prepare(sql);
-        if let Err(err) = statement {
-            return Err(Box::new(
-                ContainerSqliteError::SqliteConnPrepareFailed {
-                    sql: sql.to_string(),
-                    err,
-                },
-            ));
-        }
-        let mut statement = statement.unwrap();
+        let mut statement = self.statement_prepare(sql)?;
         let rows = statement.query_map((), |row| row.get::<&str, i64>("id"));
         if let Err(err) = rows {
             debug!("err={err}");
