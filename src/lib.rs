@@ -328,6 +328,12 @@ pub trait Renderer {
     fn run(&mut self) -> Result<(), Box<dyn error::Error>>;
 }
 
+impl SearchResult {
+    pub fn new_attribute(key: String, value: String) -> Self {
+        SearchResult::Attribute(SearchResultAttribute { key, value })
+    }
+}
+
 impl EntityId {
     pub fn new(id: u64) -> EntityId {
         EntityId { id }

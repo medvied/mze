@@ -173,6 +173,10 @@ impl ContainerSqliteTransaction<'_> {
     fn tags_all(&self) -> Vec<String> {
         Vec::new()
     }
+
+    fn get_all_attributes(&self) -> Vec<(String, String)> {
+        Vec::new()
+    }
 }
 
 impl ContainerTransaction for ContainerSqliteTransaction<'_> {
@@ -199,7 +203,22 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                     })
                     .collect()
             }
-            SearchQuery::Attributes(_attributes) => Vec::new(),
+            SearchQuery::Attributes(attributes) => {
+                let return_all_attributes = attributes.is_empty();
+                HashSet::<(String, String)>::from_iter(
+                    self.get_all_attributes(),
+                )
+                .into_iter()
+                .filter_map(|(key, value)| {
+                    if return_all_attributes || attributes.check(&key, &value)
+                    {
+                        Some(SearchResult::new_attribute(key, value))
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+            }
             SearchQuery::RecordsAndLinks(_records_and_links) => self
                 .record_get_all_ids()?
                 .iter()

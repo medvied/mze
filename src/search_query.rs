@@ -24,6 +24,22 @@ pub enum SearchQuery {
     RecordsAndLinks(SearchQueryRecordsAndLinks),
 }
 
+impl SearchQueryAttributes {
+    pub fn is_empty(&self) -> bool {
+        self.key_substrings.is_empty()
+            && self.value_substrings.is_empty()
+            && self.kv_substrings.is_empty()
+    }
+
+    pub fn check(&self, key: &str, value: &str) -> bool {
+        self.kv_substrings
+            .iter()
+            .any(|(k, v)| key.contains(k) && value.contains(v))
+            || self.key_substrings.iter().any(|k| key.contains(k))
+            || self.value_substrings.iter().any(|v| value.contains(v))
+    }
+}
+
 impl SearchQuery {
     pub fn new(query: &str) -> SearchQuery {
         let words: Vec<_> = query.split_whitespace().collect();
