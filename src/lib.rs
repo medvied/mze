@@ -193,6 +193,7 @@ pub struct SearchResultTag {
 
 pub struct SearchResultAttribute {
     pub key: String,
+    pub value: String,
 }
 
 pub enum SearchResult {
