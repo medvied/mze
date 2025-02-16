@@ -329,6 +329,9 @@ pub trait Renderer {
 }
 
 impl SearchResult {
+    pub fn new_tag(tag: String) -> Self {
+        SearchResult::Tag(SearchResultTag { tag })
+    }
     pub fn new_attribute(key: String, value: String) -> Self {
         SearchResult::Attribute(SearchResultAttribute { key, value })
     }

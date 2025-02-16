@@ -24,6 +24,16 @@ pub enum SearchQuery {
     RecordsAndLinks(SearchQueryRecordsAndLinks),
 }
 
+impl SearchQueryTags {
+    pub fn is_empty(&self) -> bool {
+        self.tag_substrings.is_empty()
+    }
+
+    pub fn check(&self, tag: &str) -> bool {
+        self.tag_substrings.iter().any(|t| tag.contains(t))
+    }
+}
+
 impl SearchQueryAttributes {
     pub fn is_empty(&self) -> bool {
         self.key_substrings.is_empty()

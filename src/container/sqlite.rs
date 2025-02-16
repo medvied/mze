@@ -11,7 +11,7 @@ use thiserror::Error;
 
 use crate::{
     Container, ContainerTransaction, EntityId, Link, Record, SearchQuery,
-    SearchResult, SearchResultRecord, SearchResultTag, ENTITY_ID_START,
+    SearchResult, SearchResultRecord, ENTITY_ID_START,
 };
 
 #[derive(Error, Debug)]
@@ -186,17 +186,12 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
     ) -> Result<Vec<SearchResult>, Box<dyn error::Error>> {
         Ok(match search_query {
             SearchQuery::Tags(tags) => {
-                let return_all_tags = tags.tag_substrings.is_empty();
+                let return_all_tags = tags.is_empty();
                 HashSet::<String>::from_iter(self.tags_all())
                     .into_iter()
                     .filter_map(|tag| {
-                        if return_all_tags
-                            || tags
-                                .tag_substrings
-                                .iter()
-                                .any(|s| tag.contains(s))
-                        {
-                            Some(SearchResult::Tag(SearchResultTag { tag }))
+                        if return_all_tags || tags.check(&tag) {
+                            Some(SearchResult::new_tag(tag))
                         } else {
                             None
                         }
