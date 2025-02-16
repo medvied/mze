@@ -5,9 +5,9 @@ pub struct SearchQueryTags {
 
 #[derive(Debug)]
 pub struct SearchQueryAttributes {
-    pub attribute_key_substrings: Vec<String>,
-    pub attribute_value_substrings: Vec<String>,
-    pub attribute_kv_substrings: Vec<(String, String)>,
+    pub key_substrings: Vec<String>,
+    pub value_substrings: Vec<String>,
+    pub kv_substrings: Vec<(String, String)>,
 }
 
 #[derive(Debug)]
@@ -45,9 +45,9 @@ impl SearchQuery {
                 .collect();
             SearchQuery::Tags(SearchQueryTags { tag_substrings })
         } else if words.contains(&"#=") {
-            let mut attribute_key_substrings = Vec::new();
-            let mut attribute_value_substrings = Vec::new();
-            let mut attribute_kv_substrings = Vec::new();
+            let mut key_substrings = Vec::new();
+            let mut value_substrings = Vec::new();
+            let mut kv_substrings = Vec::new();
             for word in words {
                 let word = if let Some(stripped) = word.strip_prefix("#") {
                     stripped
@@ -62,27 +62,27 @@ impl SearchQuery {
                     let v = String::from(&word[equals_pos + 1..]);
                     if v.is_empty() {
                         assert!(!k.is_empty());
-                        attribute_key_substrings.push(k);
+                        key_substrings.push(k);
                     } else if k.is_empty() {
-                        attribute_value_substrings.push(v);
+                        value_substrings.push(v);
                     } else {
-                        attribute_kv_substrings.push((k, v));
+                        kv_substrings.push((k, v));
                     }
                 } else {
-                    attribute_key_substrings.push(String::from(word));
-                    attribute_value_substrings.push(String::from(word));
+                    key_substrings.push(String::from(word));
+                    value_substrings.push(String::from(word));
                 };
             }
             SearchQuery::Attributes(SearchQueryAttributes {
-                attribute_key_substrings,
-                attribute_value_substrings,
-                attribute_kv_substrings,
+                key_substrings,
+                value_substrings,
+                kv_substrings,
             })
         } else {
             let mut tag_substrings = Vec::new();
-            let mut attribute_key_substrings = Vec::new();
-            let mut attribute_value_substrings = Vec::new();
-            let mut attribute_kv_substrings = Vec::new();
+            let mut key_substrings = Vec::new();
+            let mut value_substrings = Vec::new();
+            let mut kv_substrings = Vec::new();
             let mut text_substrings = Vec::new();
 
             for word in words {
@@ -96,11 +96,11 @@ impl SearchQuery {
                         // XXX copy-paste
                         if v.is_empty() {
                             assert!(!k.is_empty());
-                            attribute_key_substrings.push(k);
+                            key_substrings.push(k);
                         } else if k.is_empty() {
-                            attribute_value_substrings.push(v);
+                            value_substrings.push(v);
                         } else {
-                            attribute_kv_substrings.push((k, v));
+                            kv_substrings.push((k, v));
                         }
                     } else {
                         tag_substrings.push(String::from(word));
@@ -113,9 +113,9 @@ impl SearchQuery {
             SearchQuery::RecordsAndLinks(SearchQueryRecordsAndLinks {
                 tags: SearchQueryTags { tag_substrings },
                 attributes: SearchQueryAttributes {
-                    attribute_key_substrings,
-                    attribute_value_substrings,
-                    attribute_kv_substrings,
+                    key_substrings,
+                    value_substrings,
+                    kv_substrings,
                 },
                 text_substrings,
             })
