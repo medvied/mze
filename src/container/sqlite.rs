@@ -11,7 +11,7 @@ use thiserror::Error;
 
 use crate::{
     Container, ContainerTransaction, EntityId, Link, Record, SearchQuery,
-    SearchResult, SearchResultRecord, ENTITY_ID_START,
+    SearchResult, ENTITY_ID_START,
 };
 
 #[derive(Error, Debug)]
@@ -214,14 +214,57 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
                 })
                 .collect()
             }
-            SearchQuery::RecordsAndLinks(_records_and_links) => self
+            SearchQuery::RecordsAndLinks(records_and_links) => self
                 .record_get_all_ids()?
-                .iter()
-                .map(|record_id| {
-                    SearchResult::Record(SearchResultRecord {
-                        record_id: *record_id,
-                    })
+                .into_iter()
+                .filter_map(|record_id| {
+                    let record = self.record_get(&record_id);
+                    match record {
+                        Ok(record) => match record {
+                            Some(record) => {
+                                if records_and_links.check_record(&record) {
+                                    Some(SearchResult::new_record(record_id))
+                                } else {
+                                    None
+                                }
+                            }
+                            None => Some(SearchResult::new_error(format!(
+                                "No such record with record_id={record_id:?}"
+                            ))),
+                        },
+                        Err(err) => Some(SearchResult::new_error(format!(
+                            "Failed to get record \
+                                        with record_id={record_id:?}: {err}"
+                        ))),
+                    }
                 })
+                .chain(self.link_get_all_ids()?.into_iter().filter_map(
+                    |link_id| {
+                        let link = self.link_get(&link_id);
+                        match link {
+                            Ok(link) => match link {
+                                Some(link) => {
+                                    if records_and_links.check_link(&link) {
+                                        Some(SearchResult::new_link(link_id))
+                                    } else {
+                                        None
+                                    }
+                                }
+                                None => {
+                                    Some(SearchResult::new_error(format!(
+                                        "No such link with link_id={link_id:?}"
+                                )))
+                                }
+                            },
+                            Err(err) => {
+                                Some(SearchResult::new_error(format!(
+                                    "Failed to get link \
+                                        with link_id={link_id:?}: {err}"
+                                )))
+                            }
+                        }
+                    },
+                ))
                 .collect(),
         })
     }

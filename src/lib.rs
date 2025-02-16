@@ -196,11 +196,16 @@ pub struct SearchResultAttribute {
     pub value: String,
 }
 
+pub struct SearchResultError {
+    pub error_message: String,
+}
+
 pub enum SearchResult {
     Record(SearchResultRecord),
     Link(SearchResultLink),
     Tag(SearchResultTag),
     Attribute(SearchResultAttribute),
+    Error(SearchResultError),
 }
 
 pub trait ContainerTransaction {
@@ -329,11 +334,20 @@ pub trait Renderer {
 }
 
 impl SearchResult {
+    pub fn new_record(record_id: EntityId) -> Self {
+        SearchResult::Record(SearchResultRecord { record_id })
+    }
+    pub fn new_link(link_id: EntityId) -> Self {
+        SearchResult::Link(SearchResultLink { link_id })
+    }
     pub fn new_tag(tag: String) -> Self {
         SearchResult::Tag(SearchResultTag { tag })
     }
     pub fn new_attribute(key: String, value: String) -> Self {
         SearchResult::Attribute(SearchResultAttribute { key, value })
+    }
+    pub fn new_error(error_message: String) -> Self {
+        SearchResult::Error(SearchResultError { error_message })
     }
 }
 

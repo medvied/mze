@@ -1,3 +1,5 @@
+use crate::{Link, Record, TagsAndAttributes};
+
 #[derive(Debug)]
 pub struct SearchQueryTags {
     pub tag_substrings: Vec<String>,
@@ -32,6 +34,12 @@ impl SearchQueryTags {
     pub fn check(&self, tag: &str) -> bool {
         self.tag_substrings.iter().any(|t| tag.contains(t))
     }
+
+    pub fn check_tags(&self, tags: &[String]) -> bool {
+        self.tag_substrings
+            .iter()
+            .all(|t| tags.iter().any(|tag| tag.contains(t)))
+    }
 }
 
 impl SearchQueryAttributes {
@@ -47,6 +55,51 @@ impl SearchQueryAttributes {
             .any(|(k, v)| key.contains(k) && value.contains(v))
             || self.key_substrings.iter().any(|k| key.contains(k))
             || self.value_substrings.iter().any(|v| value.contains(v))
+    }
+
+    pub fn check_attributes(&self, attributes: &[(String, String)]) -> bool {
+        self.kv_substrings.iter().all(|(k, v)| {
+            attributes
+                .iter()
+                .any(|(key, value)| key.contains(k) && value.contains(v))
+        }) && self
+            .key_substrings
+            .iter()
+            .all(|k| attributes.iter().any(|(key, _)| key.contains(k)))
+            && self
+                .value_substrings
+                .iter()
+                .all(|v| attributes.iter().any(|(_, value)| value.contains(v)))
+    }
+}
+
+impl SearchQueryRecordsAndLinks {
+    pub fn is_empty(&self) -> bool {
+        self.tags.is_empty()
+            && self.attributes.is_empty()
+            && self.text_substrings.is_empty()
+    }
+
+    fn check_tags_and_attributes(&self, ta: &TagsAndAttributes) -> bool {
+        self.tags.check_tags(&ta.tags)
+            && self.attributes.check_attributes(&ta.attributes)
+    }
+
+    pub fn check_record(&self, record: &Record) -> bool {
+        self.check_tags_and_attributes(&record.ta)
+            && (self.text_substrings.is_empty()
+                || record.data.is_none()
+                || match std::str::from_utf8(record.data.as_ref().unwrap()) {
+                    Ok(record_data) => self
+                        .text_substrings
+                        .iter()
+                        .any(|s| record_data.contains(s)),
+                    Err(_) => true,
+                })
+    }
+
+    pub fn check_link(&self, link: &Link) -> bool {
+        self.check_tags_and_attributes(&link.ta)
     }
 }
 
