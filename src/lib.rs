@@ -133,6 +133,8 @@
 pub mod app;
 pub mod container;
 pub mod renderer;
+pub mod search;
+pub use search::Search;
 pub mod search_query;
 pub use search_query::SearchQuery;
 // rusrc adds the following message if the name is test or test_helpers
@@ -215,7 +217,9 @@ pub trait ContainerTransaction {
     fn search(
         &self,
         search_query: &SearchQuery,
-    ) -> Result<Vec<SearchResult>, Box<dyn error::Error>>;
+    ) -> Result<Vec<SearchResult>, Box<dyn error::Error>> {
+        Search::search(self, search_query)
+    }
 
     fn tags_get(
         &self,
