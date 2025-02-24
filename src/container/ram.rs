@@ -1,31 +1,37 @@
 use std::{
     collections::{HashMap, HashSet},
-    error, iter,
+    error,
 };
-
-use log::{debug, error};
 
 use crate::{
-    Container, ContainerTransaction, EntityId, Link, Record, SearchQuery,
-    SearchResult, ENTITY_ID_START,
+    Container, ContainerError, ContainerTransaction, EntityId, Link, Record,
+    RecordOrLink, TagsAndAttributes, ENTITY_ID_START,
 };
 
-pub struct ContainerRam {}
-pub struct ContainerRamTransaction {}
+pub struct ContainerRam {
+    entities: HashMap<EntityId, RecordOrLink>,
+}
+
+// XXX the changes are not transactional
+// TODO decide if transactions are needed here
+pub struct ContainerRamTransaction<'a> {
+    container_ram: &'a mut ContainerRam,
+}
 
 impl Container for ContainerRam {
-    fn new(uri: &str) -> Result<Self, Box<dyn error::Error>>
-    where
-        Self: Sized,
-    {
-        Ok(Self {})
+    fn new(_uri: &str) -> Result<Self, Box<dyn error::Error>> {
+        Ok(Self {
+            entities: HashMap::new(),
+        })
     }
 
     fn create(&mut self) -> Result<(), Box<dyn error::Error>> {
+        self.entities.clear();
         Ok(())
     }
 
     fn destroy(&mut self) -> Result<(), Box<dyn error::Error>> {
+        self.entities.clear();
         Ok(())
     }
 
@@ -37,11 +43,43 @@ impl Container for ContainerRam {
         &mut self,
     ) -> Result<Box<dyn ContainerTransaction + '_>, Box<dyn error::Error>>
     {
-        Ok(Box::new(ContainerRamTransaction {}))
+        Ok(Box::new(ContainerRamTransaction {
+            container_ram: self,
+        }))
     }
 }
 
-impl ContainerTransaction for ContainerRamTransaction {
+impl ContainerRamTransaction<'_> {
+    fn ta_get(
+        &self,
+        eid: &EntityId,
+    ) -> Result<&TagsAndAttributes, Box<dyn error::Error>> {
+        match self.container_ram.entities.get(eid) {
+            Some(record_or_link) => {
+                Ok(record_or_link.get_tags_and_attributes())
+            }
+            None => {
+                Err(Box::new(ContainerError::EntityNotFound { eid: *eid }))
+            }
+        }
+    }
+
+    fn ta_get_mut(
+        &mut self,
+        eid: &EntityId,
+    ) -> Result<&mut TagsAndAttributes, Box<dyn error::Error>> {
+        match self.container_ram.entities.get_mut(eid) {
+            Some(record_or_link) => {
+                Ok(record_or_link.get_tags_and_attributes_mut())
+            }
+            None => {
+                Err(Box::new(ContainerError::EntityNotFound { eid: *eid }))
+            }
+        }
+    }
+}
+
+impl ContainerTransaction for ContainerRamTransaction<'_> {
     fn commit(self: Box<Self>) -> Result<(), Box<dyn error::Error>> {
         Ok(())
     }
@@ -50,18 +88,11 @@ impl ContainerTransaction for ContainerRamTransaction {
         Ok(())
     }
 
-    fn search(
-        &self,
-        search_query: &SearchQuery,
-    ) -> Result<Vec<SearchResult>, Box<dyn error::Error>> {
-        Ok(Vec::new())
-    }
-
     fn tags_get(
         &self,
         eid: &EntityId,
     ) -> Result<Vec<String>, Box<dyn error::Error>> {
-        Ok(Vec::new())
+        Ok(self.ta_get(eid)?.tags.clone())
     }
 
     fn tags_put(
@@ -69,6 +100,7 @@ impl ContainerTransaction for ContainerRamTransaction {
         eid: &EntityId,
         tags: &[String],
     ) -> Result<(), Box<dyn error::Error>> {
+        self.ta_get_mut(eid)?.tags = Vec::from(tags);
         Ok(())
     }
 
@@ -76,18 +108,24 @@ impl ContainerTransaction for ContainerRamTransaction {
         &mut self,
         eid: &EntityId,
     ) -> Result<(), Box<dyn error::Error>> {
+        self.ta_get_mut(eid)?.tags = Vec::new();
         Ok(())
     }
 
     fn tags_all(&self) -> Result<Vec<String>, Box<dyn error::Error>> {
-        Ok(Vec::new())
+        let mut tags = HashSet::new();
+        for record_or_link in self.container_ram.entities.values() {
+            let ta = record_or_link.get_tags_and_attributes();
+            tags.extend(ta.tags.clone());
+        }
+        Ok(tags.into_iter().collect())
     }
 
     fn attributes_get(
         &self,
         eid: &EntityId,
     ) -> Result<Vec<(String, String)>, Box<dyn error::Error>> {
-        Ok(Vec::new())
+        Ok(self.ta_get(eid)?.attributes.clone())
     }
 
     fn attributes_put(
@@ -95,6 +133,7 @@ impl ContainerTransaction for ContainerRamTransaction {
         eid: &EntityId,
         attributes: &[(String, String)],
     ) -> Result<(), Box<dyn error::Error>> {
+        self.ta_get_mut(eid)?.attributes = Vec::from(attributes);
         Ok(())
     }
 
@@ -102,20 +141,36 @@ impl ContainerTransaction for ContainerRamTransaction {
         &mut self,
         eid: &EntityId,
     ) -> Result<(), Box<dyn error::Error>> {
+        self.ta_get_mut(eid)?.attributes = Vec::new();
         Ok(())
     }
 
     fn attributes_all(
         &self,
     ) -> Result<Vec<(String, String)>, Box<dyn error::Error>> {
-        Ok(Vec::new())
+        let mut attributes = HashSet::new();
+        for record_or_link in self.container_ram.entities.values() {
+            let ta = record_or_link.get_tags_and_attributes();
+            attributes.extend(ta.attributes.clone());
+        }
+        Ok(attributes.into_iter().collect())
     }
 
     fn record_get(
         &self,
         eid: &EntityId,
     ) -> Result<Option<Record>, Box<dyn error::Error>> {
-        Ok(None)
+        Ok(match self.container_ram.entities.get(eid) {
+            Some(record_or_link) => match record_or_link {
+                RecordOrLink::Record(record) => Some(record.clone()),
+                RecordOrLink::Link(_) => {
+                    return Err(Box::new(
+                        ContainerError::FoundLinkInsteadOfRecord { eid: *eid },
+                    ))
+                }
+            },
+            None => None,
+        })
     }
 
     fn record_put(
@@ -123,46 +178,126 @@ impl ContainerTransaction for ContainerRamTransaction {
         eid: &Option<EntityId>,
         record: &Record,
     ) -> Result<EntityId, Box<dyn error::Error>> {
-        Ok(EntityId::new(0))
+        if let Some(eid) = eid {
+            if let Some(RecordOrLink::Link(_)) =
+                self.container_ram.entities.get(eid)
+            {
+                return Err(Box::new(
+                    ContainerError::FoundLinkInsteadOfRecord { eid: *eid },
+                ));
+            }
+        }
+        let eid = if let Some(eid) = eid {
+            *eid
+        } else {
+            ENTITY_ID_START
+        };
+        self.container_ram
+            .entities
+            .insert(eid, RecordOrLink::Record(record.clone()));
+        Ok(eid)
     }
 
     fn record_del(
         &mut self,
         eid: &EntityId,
     ) -> Result<bool, Box<dyn error::Error>> {
-        Ok(false)
+        if let Some(RecordOrLink::Link(_)) =
+            self.container_ram.entities.get(eid)
+        {
+            return Err(Box::new(ContainerError::FoundLinkInsteadOfRecord {
+                eid: *eid,
+            }));
+        }
+        Ok(self.container_ram.entities.remove(eid).is_some())
     }
 
     fn record_get_all_ids(
         &self,
     ) -> Result<Vec<EntityId>, Box<dyn error::Error>> {
-        Ok(Vec::new())
+        Ok(self
+            .container_ram
+            .entities
+            .iter()
+            .filter_map(|(eid, record_or_link)| {
+                if let RecordOrLink::Record(_) = record_or_link {
+                    Some(*eid)
+                } else {
+                    None
+                }
+            })
+            .collect())
     }
 
     fn link_get(
         &self,
         eid: &EntityId,
     ) -> Result<Option<Link>, Box<dyn error::Error>> {
-        Ok(None)
+        Ok(match self.container_ram.entities.get(eid) {
+            Some(record_or_link) => match record_or_link {
+                RecordOrLink::Link(link) => Some(link.clone()),
+                RecordOrLink::Record(_) => {
+                    return Err(Box::new(
+                        ContainerError::FoundRecordInsteadOfLink { eid: *eid },
+                    ))
+                }
+            },
+            None => None,
+        })
     }
     fn link_put(
         &mut self,
         eid: &Option<EntityId>,
         link: &Link,
     ) -> Result<EntityId, Box<dyn error::Error>> {
-        Ok(EntityId::new(0))
+        if let Some(eid) = eid {
+            if let Some(RecordOrLink::Record(_)) =
+                self.container_ram.entities.get(eid)
+            {
+                return Err(Box::new(
+                    ContainerError::FoundRecordInsteadOfLink { eid: *eid },
+                ));
+            }
+        }
+        let eid = if let Some(eid) = eid {
+            *eid
+        } else {
+            ENTITY_ID_START
+        };
+        self.container_ram
+            .entities
+            .insert(eid, RecordOrLink::Link(link.clone()));
+        Ok(eid)
     }
 
     fn link_del(
         &mut self,
         eid: &EntityId,
     ) -> Result<bool, Box<dyn error::Error>> {
-        Ok(false)
+        if let Some(RecordOrLink::Record(_)) =
+            self.container_ram.entities.get(eid)
+        {
+            return Err(Box::new(ContainerError::FoundRecordInsteadOfLink {
+                eid: *eid,
+            }));
+        }
+        Ok(self.container_ram.entities.remove(eid).is_some())
     }
 
     fn link_get_all_ids(
         &self,
     ) -> Result<Vec<EntityId>, Box<dyn error::Error>> {
-        Ok(Vec::new())
+        Ok(self
+            .container_ram
+            .entities
+            .iter()
+            .filter_map(|(eid, record_or_link)| {
+                if let RecordOrLink::Link(_) = record_or_link {
+                    Some(*eid)
+                } else {
+                    None
+                }
+            })
+            .collect())
     }
 }

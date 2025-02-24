@@ -146,7 +146,7 @@ pub mod helpers;
 use std::error;
 
 #[derive(
-    Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize,
+    Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, serde::Serialize,
 )]
 pub struct EntityId {
     /// Container-unique entity id.
@@ -162,23 +162,28 @@ pub const ENTITY_ID_START: EntityId = EntityId { id: 10000 };
 // strings between different entities (also check if Rust could do that
 // automatically)
 
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct TagsAndAttributes {
     pub tags: Vec<String>,
     pub attributes: Vec<(String, String)>,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Record {
     pub ta: TagsAndAttributes,
     pub data: Option<Vec<u8>>,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Link {
     pub ta: TagsAndAttributes,
     pub from: Vec<EntityId>,
     pub to: Vec<EntityId>,
+}
+
+pub enum RecordOrLink {
+    Record(Record),
+    Link(Link),
 }
 
 pub struct SearchResultRecord {
@@ -210,6 +215,16 @@ pub enum SearchResult {
     Error(SearchResultError),
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum ContainerError {
+    #[error("entity with eid={eid} not found")]
+    EntityNotFound { eid: EntityId },
+    #[error("found record instead of link (eid={eid})")]
+    FoundRecordInsteadOfLink { eid: EntityId },
+    #[error("found link instead of record (eid={eid})")]
+    FoundLinkInsteadOfRecord { eid: EntityId },
+}
+
 pub trait ContainerTransaction {
     fn commit(self: Box<Self>) -> Result<(), Box<dyn error::Error>>;
     fn rollback(self: Box<Self>) -> Result<(), Box<dyn error::Error>>;
@@ -225,6 +240,10 @@ pub trait ContainerTransaction {
         &self,
         eid: &EntityId,
     ) -> Result<Vec<String>, Box<dyn error::Error>>;
+    // TODO here and in attributes_put(): define the semantics
+    // if it should add new tags (unlikely), like it's done in
+    // src/container/sqlite, or if it should replace the tags entirely, like
+    // it's done in src/container/ram
     fn tags_put(
         &mut self,
         eid: &EntityId,
@@ -359,6 +378,12 @@ impl SearchResult {
     }
 }
 
+impl std::fmt::Display for EntityId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self, f)
+    }
+}
+
 impl EntityId {
     pub fn new(id: u64) -> EntityId {
         EntityId { id }
@@ -370,5 +395,21 @@ impl EntityId {
 
     pub fn add_1(&self) -> Self {
         EntityId { id: self.id + 1 }
+    }
+}
+
+impl RecordOrLink {
+    pub fn get_tags_and_attributes(&self) -> &TagsAndAttributes {
+        match self {
+            Self::Record(record) => &record.ta,
+            Self::Link(link) => &link.ta,
+        }
+    }
+
+    pub fn get_tags_and_attributes_mut(&mut self) -> &mut TagsAndAttributes {
+        match self {
+            Self::Record(record) => &mut record.ta,
+            Self::Link(link) => &mut link.ta,
+        }
     }
 }
