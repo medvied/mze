@@ -184,29 +184,6 @@ impl ContainerSqliteTransaction<'_> {
             })
         })?)
     }
-
-    fn get_all_tags(&self) -> Result<Vec<String>, Box<dyn error::Error>> {
-        let sql = "SELECT DISTINCT tag \
-                   FROM tags;";
-        let mut statement = self.statement_prepare(sql)?;
-        let rows =
-            statement.query_map((), |row| row.get::<&str, String>("tag"));
-        let result: Result<Vec<_>, _> = rows
-            .map_err(|err| {
-                Box::new(ContainerSqliteError::SqliteQueryMapFailed { err })
-            })?
-            .map(|row| {
-                row.map_err(|err| {
-                    Box::new(ContainerSqliteError::ErrorRetrievingData { err })
-                })
-            })
-            .collect();
-        Ok(result?)
-    }
-
-    fn get_all_attributes(&self) -> Vec<(String, String)> {
-        Vec::new()
-    }
 }
 
 impl ContainerTransaction for ContainerSqliteTransaction<'_> {
@@ -217,7 +194,7 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         Ok(match search_query {
             SearchQuery::Tags(tags) => {
                 let return_all_tags = tags.is_empty();
-                HashSet::<String>::from_iter(self.get_all_tags()?)
+                HashSet::<String>::from_iter(self.tags_all()?)
                     .into_iter()
                     .filter_map(|tag| {
                         if return_all_tags || tags.check(&tag) {
@@ -230,19 +207,18 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             }
             SearchQuery::Attributes(attributes) => {
                 let return_all_attributes = attributes.is_empty();
-                HashSet::<(String, String)>::from_iter(
-                    self.get_all_attributes(),
-                )
-                .into_iter()
-                .filter_map(|(key, value)| {
-                    if return_all_attributes || attributes.check(&key, &value)
-                    {
-                        Some(SearchResult::new_attribute(key, value))
-                    } else {
-                        None
-                    }
-                })
-                .collect()
+                HashSet::<(String, String)>::from_iter(self.attributes_all()?)
+                    .into_iter()
+                    .filter_map(|(key, value)| {
+                        if return_all_attributes
+                            || attributes.check(&key, &value)
+                        {
+                            Some(SearchResult::new_attribute(key, value))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
             }
             SearchQuery::RecordsAndLinks(records_and_links) => self
                 .record_get_all_ids()?
@@ -408,6 +384,25 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         Ok(())
     }
 
+    fn tags_all(&self) -> Result<Vec<String>, Box<dyn error::Error>> {
+        let sql = "SELECT DISTINCT tag \
+                   FROM tags;";
+        let mut statement = self.statement_prepare(sql)?;
+        let rows =
+            statement.query_map((), |row| row.get::<&str, String>("tag"));
+        let result: Result<Vec<_>, _> = rows
+            .map_err(|err| {
+                Box::new(ContainerSqliteError::SqliteQueryMapFailed { err })
+            })?
+            .map(|row| {
+                row.map_err(|err| {
+                    Box::new(ContainerSqliteError::ErrorRetrievingData { err })
+                })
+            })
+            .collect();
+        Ok(result?)
+    }
+
     fn attributes_get(
         &self,
         eid: &EntityId,
@@ -514,6 +509,12 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
             nr_deleted.unwrap()
         );
         Ok(())
+    }
+
+    fn attributes_all(
+        &self,
+    ) -> Result<Vec<(String, String)>, Box<dyn error::Error>> {
+        todo!()
     }
 
     fn record_get(
@@ -807,6 +808,7 @@ mod tests {
         attributes.iter().map(|(s1, s2)| (s1, s2)).collect()
     }
 
+    // TODO test tags_all()
     #[test]
     fn smoke_tags() {
         crate::app::init();
@@ -835,6 +837,7 @@ mod tests {
         container.destroy().unwrap();
     }
 
+    // TODO test attributes_all()
     #[test]
     fn smoke_attributes() {
         crate::app::init();

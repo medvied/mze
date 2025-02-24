@@ -79,6 +79,10 @@ impl ContainerTransaction for ContainerRamTransaction {
         Ok(())
     }
 
+    fn tags_all(&self) -> Result<Vec<String>, Box<dyn error::Error>> {
+        Ok(Vec::new())
+    }
+
     fn attributes_get(
         &self,
         eid: &EntityId,
@@ -99,6 +103,12 @@ impl ContainerTransaction for ContainerRamTransaction {
         eid: &EntityId,
     ) -> Result<(), Box<dyn error::Error>> {
         Ok(())
+    }
+
+    fn attributes_all(
+        &self,
+    ) -> Result<Vec<(String, String)>, Box<dyn error::Error>> {
+        Ok(Vec::new())
     }
 
     fn record_get(

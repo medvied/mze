@@ -230,6 +230,7 @@ pub trait ContainerTransaction {
         &mut self,
         eid: &EntityId,
     ) -> Result<(), Box<dyn error::Error>>;
+    fn tags_all(&self) -> Result<Vec<String>, Box<dyn error::Error>>;
 
     fn attributes_get(
         &self,
@@ -244,6 +245,9 @@ pub trait ContainerTransaction {
         &mut self,
         eid: &EntityId,
     ) -> Result<(), Box<dyn error::Error>>;
+    fn attributes_all(
+        &self,
+    ) -> Result<Vec<(String, String)>, Box<dyn error::Error>>;
 
     fn record_get(
         &self,
