@@ -21,17 +21,17 @@ impl Container for ContainerRam {
         Ok(Self {})
     }
 
-    fn create(&self) -> Result<(), Box<dyn error::Error>> {
+    fn create(&mut self) -> Result<(), Box<dyn error::Error>> {
         Ok(())
     }
 
-    fn destroy(&self) -> Result<(), Box<dyn error::Error>> {
+    fn destroy(&mut self) -> Result<(), Box<dyn error::Error>> {
         Ok(())
     }
 
-    fn load(&self, uri: String) {}
+    fn load(&mut self, _uri: String) {}
 
-    fn save(&self, uri: String) {}
+    fn save(&mut self, _uri: String) {}
 
     fn begin_transaction(
         &mut self,

@@ -103,7 +103,7 @@ impl Container for ContainerSqlite {
     }
 
     /// TODO use NOT NULL here and check for NULL
-    fn create(&self) -> Result<(), Box<dyn error::Error>> {
+    fn create(&mut self) -> Result<(), Box<dyn error::Error>> {
         let statements: &[&str] = &[
             "CREATE TABLE records(\
                 id INTEGER, \
@@ -127,7 +127,7 @@ impl Container for ContainerSqlite {
         self.statements_execute(statements)
     }
 
-    fn destroy(&self) -> Result<(), Box<dyn error::Error>> {
+    fn destroy(&mut self) -> Result<(), Box<dyn error::Error>> {
         let statements: &[&str] = &[
             "DROP TABLE links;",
             "DROP TABLE attributes;",
@@ -137,11 +137,11 @@ impl Container for ContainerSqlite {
         self.statements_execute(statements)
     }
 
-    fn load(&self, _uri: String) {
+    fn load(&mut self, _uri: String) {
         todo!();
     }
 
-    fn save(&self, _uri: String) {
+    fn save(&mut self, _uri: String) {
         todo!();
     }
 

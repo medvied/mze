@@ -320,10 +320,10 @@ pub trait Container {
     where
         Self: Sized;
 
-    fn create(&self) -> Result<(), Box<dyn error::Error>>;
-    fn destroy(&self) -> Result<(), Box<dyn error::Error>>;
-    fn load(&self, uri: String);
-    fn save(&self, uri: String);
+    fn create(&mut self) -> Result<(), Box<dyn error::Error>>;
+    fn destroy(&mut self) -> Result<(), Box<dyn error::Error>>;
+    fn load(&mut self, uri: String);
+    fn save(&mut self, uri: String);
 
     fn begin_transaction(
         &mut self,

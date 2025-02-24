@@ -27,7 +27,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let args = Args::parse();
 
-    let container = container::new(&args.container_type, &args.container_uri)?;
+    let mut container =
+        container::new(&args.container_type, &args.container_uri)?;
     if args.container_create {
         container.create()?;
     }
