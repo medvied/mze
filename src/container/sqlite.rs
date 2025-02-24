@@ -208,6 +208,9 @@ impl ContainerTransaction for ContainerSqliteTransaction<'_> {
         }
     }
 
+    // TODO the following function along with attributes_get() do not check
+    // for existence of the entity. Decide if such check is needed and if it is
+    // implement it.
     fn tags_get(
         &self,
         eid: &EntityId,
