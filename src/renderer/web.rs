@@ -1,3 +1,5 @@
+// TODO use https://docs.rs/utoipa/latest/utoipa/
+
 use std::{collections::HashMap, error};
 
 use actix_web::{
