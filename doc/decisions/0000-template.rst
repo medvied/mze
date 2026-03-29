@@ -4,6 +4,8 @@
      - proposed | rejected | accepted | deprecated | superseded by MZE-ADR-1234
    * - introduced
      - yyyy-mm-dd
+   * - last updated
+     - yyyy-mm-dd
    * - decision-makers
      - Maksym Medvied
    * - consulted
